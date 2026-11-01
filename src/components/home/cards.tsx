@@ -1,7 +1,7 @@
 import Link from "next/link";
-import type { ContinueReading, RankingEntry, TrendingSeries, UpdatedSeries } from "@/lib/server/home";
+import type { ContinueReading, CoverBadge, RankingEntry, SeriesSummary, UpdatedSeries } from "@/lib/server/home";
 import { Cover } from "../cover";
-import { formatViews, timeAgo } from "./format";
+import { formatViews, timeAgo } from "../format";
 
 export function ContinueCard({ item }: { item: ContinueReading }) {
   const progress = item.pageCount > 0 ? Math.min(100, Math.round((item.page / item.pageCount) * 100)) : 0;
@@ -78,7 +78,8 @@ export function UpdatedCard({ item, now }: { item: UpdatedSeries; now: number })
   );
 }
 
-export function TrendingCard({ item }: { item: TrendingSeries }) {
+/** Cover + title card (also used for recommendations, where there is no badge). */
+export function TrendingCard({ item }: { item: SeriesSummary & { badge?: CoverBadge } }) {
   return (
     <Link
       href={`/series/${item.slug}`}

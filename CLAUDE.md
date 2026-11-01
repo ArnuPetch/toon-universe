@@ -28,7 +28,7 @@ TypeScript · Next.js · Supabase · Cloudflare R2 · Vercel Hobby (dev) → Clo
 
 ## สถานะปัจจุบัน (อัพเดต 2026-11-01)
 
-**ขั้นตอน: เริ่มทำหน้าเว็บแล้ว — หน้า Home (มี cache, เป็นต้นแบบของทุกหน้า) + Login เสร็จ → ถัดไปคือหน้าเรื่อง/หน้าอ่าน (ดูลำดับด้านล่าง) ทำตาม [docs/frontend.md](docs/frontend.md)**
+**ขั้นตอน: กำลังทำหน้าเว็บ — Home, Login, หน้าเรื่อง, หน้าอ่าน เสร็จ → ถัดไปคือหน้าเติม coin `/coins` (ดูลำดับด้านล่าง) ทำตาม [docs/frontend.md](docs/frontend.md)**
 
 เสร็จแล้ว (รายละเอียดใน docs):
 
@@ -41,6 +41,7 @@ TypeScript · Next.js · Supabase · Cloudflare R2 · Vercel Hobby (dev) → Clo
 - นับยอดวิว + Ranking (materialized views) + "คนที่อ่านเรื่องนี้ก็อ่าน" — [docs/database.md](docs/database.md#ranking--recommendation-ranking), `src/lib/server/ranking.ts`
 - หน้า Login / สมัครสมาชิก `/login` (email + password, Server Actions `src/app/actions/auth.ts`, ยืนยัน email ที่ `/auth/confirm`) — [docs/server-integration.md](docs/server-integration.md#login--สมัครสมาชิก)
 - หน้า Home (`src/app/page.tsx`, ข้อมูลจาก `src/lib/server/home.ts`) + cache ข้อมูลสาธารณะ (tag `catalog`, ล้างด้วย `invalidateCatalog()`) — [docs/frontend.md](docs/frontend.md), [docs/server-integration.md](docs/server-integration.md#cache-ข้อมูลสาธารณะ-catalog)
+- หน้าเรื่อง `/series/[slug]` + หน้าอ่าน `/series/[slug]/[number]` (unlock ด้วย coin, นับวิว, บันทึก progress/โหมดอ่าน, ติดตาม/ชั้นหนังสือ, age gate) — ข้อมูลจาก `src/lib/server/series.ts`, actions `src/app/actions/reader.ts` + `bookshelf.ts` — [docs/frontend.md](docs/frontend.md#หน้าเรื่อง--หน้าอ่าน)
 
 กฎสำคัญ (ห้ามพลาด):
 
@@ -56,10 +57,11 @@ TypeScript · Next.js · Supabase · Cloudflare R2 · Vercel Hobby (dev) → Clo
 
 ยังไม่ได้ทำ (เรียงตามลำดับที่ควรทำ):
 
-1. หน้าเรื่อง `/series/[slug]` และหน้าอ่านตอน `/series/[slug]/[number]` (ต้องเรียก `recordEpisodeView`, unlock ตอนด้วย coin)
-2. หน้าเติม coin `/coins` → ทดสอบ Stripe PromptPay กับ sandbox จริง — ดู [Stripe sandbox](#stripe-sandbox) ด้านล่าง
-3. หน้าอื่นของ Reader ที่ Home ลิงก์ไว้: `/search`, `/ranking`, `/genres`, `/bookshelf`, `/notifications`, `/profile` (ปุ่มออกจากระบบ → `signOut`, กรอกวันเกิด), `/updates`, `/terms`, `/privacy`, ลืมรหัสผ่าน
+1. หน้าเติม coin `/coins` → ทดสอบ Stripe PromptPay กับ sandbox จริง — ดู [Stripe sandbox](#stripe-sandbox) ด้านล่าง
+2. หน้าอื่นของ Reader ที่ Home ลิงก์ไว้: `/search`, `/ranking`, `/genres` (+ `/genres/[slug]` ลิงก์จากหน้าเรื่อง), `/bookshelf`, `/notifications`, `/profile` (ปุ่มออกจากระบบ → `signOut`, กรอกวันเกิด), `/updates`, `/terms`, `/privacy`, ลืมรหัสผ่าน
+3. คอมเมนต์ + รีวิว/ให้คะแนน (รายเรื่อง/รายตอน) บนหน้าเรื่อง/หน้าอ่าน
 4. หน้า Uploader / Admin
+5. เสิร์ฟรูปจาก R2 (ปก + หน้าของตอนผ่าน signed URL) — ตอนนี้เป็น placeholder (`TODO` ใน `cover.tsx`, `reader.tsx`)
 
 ฟีเจอร์ที่จะทำทีหลัง (ยังไม่ต้องทำตอนนี้):
 

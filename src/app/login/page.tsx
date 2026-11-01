@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { AuthForm } from "@/components/auth/auth-form";
-import { SectionSkeleton } from "@/components/home/section";
+import { SectionSkeleton } from "@/components/section";
 import { getUserId } from "@/lib/server/auth";
 import { safeNext } from "@/lib/safe-next";
 

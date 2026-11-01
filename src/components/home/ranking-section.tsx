@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Section } from "./section";
+import { Section } from "../section";
 
 type Period = "day" | "week" | "month";
 

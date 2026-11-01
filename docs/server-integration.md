@@ -15,7 +15,7 @@
 
 ## Server helpers
 
-- `server/auth.ts`: `getClaims` (cache ต่อ request), `requireUserId`, `requireAdminId` (เช็ค `app_metadata.role`)
+- `server/auth.ts`: `getClaims` (cache ต่อ request; เรียก `connection()` ก่อน เพราะการ verify JWT อ่านเวลา — ห้ามเกิดตอน prerender), `requireUserId`, `requireAdminId` (เช็ค `app_metadata.role`)
 - `server/rpc.ts`: wrapper ทุก RPC (ดู [database.md](database.md))
   - **ดึง id จาก session เอง ไม่รับจาก caller**
   - คืน `ActionResult` (`{ok,data}` / `{ok:false,code,message}`) ไม่ throw

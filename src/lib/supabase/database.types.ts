@@ -800,6 +800,11 @@ isOneToOne: false
               "age_rating": Database["public"]['Enums']["age_rating"],"cover_key": string,"reason": string,"series_id": number,"slug": string,"status": Database["public"]['Enums']["series_status"],"title": string
             }[]
                            },
+"get_series_stats":
+{ Args: { "p_series_id": number }; Returns: {
+              "follows": number,"rating_avg": number,"rating_count": number,"views": number
+            }[]
+                           },
 "lift_sanction":
 { Args: { "p_admin_id": string,"p_sanction_id": number }; Returns: Json
                            },
@@ -829,6 +834,9 @@ isOneToOne: false
                            },
 "unlock_episode":
 { Args: { "p_episode_id": number,"p_user_id": string }; Returns: Json
+                           },
+"viewer_meets_age_rating":
+{ Args: { "p_rating": Database["public"]['Enums']["age_rating"] }; Returns: boolean
                            }
           }
           Enums: {

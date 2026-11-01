@@ -5,14 +5,10 @@ import { useEffect, useState, useTransition } from "react";
 import { addToBookshelf } from "@/app/actions/bookshelf";
 import type { HeroSeries } from "@/lib/server/home";
 import { coverInitial } from "../cover";
+import { SERIES_STATUS_LABEL } from "../format";
 
 const INTERVAL_MS = 6000;
 
-const STATUS_LABEL: Record<HeroSeries["status"], string> = {
-  ongoing: "กำลังอัพเดต",
-  completed: "จบแล้ว",
-  hiatus: "พักการอัพเดต",
-};
 
 export function HeroCarousel({ items }: { items: HeroSeries[] }) {
   const [index, setIndex] = useState(0);
@@ -119,7 +115,7 @@ function Slide({ item, animate }: { item: HeroSeries; animate: boolean }) {
             </span>
           )}
           {item.latestEpisode != null && <span>ตอนที่ {item.latestEpisode}</span>}
-          <span>{STATUS_LABEL[item.status]}</span>
+          <span>{SERIES_STATUS_LABEL[item.status]}</span>
         </div>
         <div className="flex gap-3 pt-1.5">
           {first && (

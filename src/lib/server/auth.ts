@@ -1,4 +1,5 @@
 import "server-only";
+import { connection } from "next/server";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { AppError } from "./errors";
@@ -7,6 +8,9 @@ import { AppError } from "./errors";
 // the JWT signature (never trust getSession() on the server).
 // Cached per request so many components can call it cheaply.
 export const getClaims = cache(async () => {
+  // Request-time only: verifying the JWT compares its expiry with the clock,
+  // which Next.js won't allow while prerendering (cacheComponents).
+  await connection();
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getClaims();
   if (error || !data) return null;

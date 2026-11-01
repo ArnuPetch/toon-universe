@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ChevronRightIcon } from "../icons";
+import { ChevronRightIcon } from "./icons";
 
 export function Section({
   title,

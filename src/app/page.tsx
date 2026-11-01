@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { BottomTabBar } from "@/components/home/bottom-tab-bar";
+import { BottomTabBar } from "@/components/bottom-tab-bar";
 import {
   ContinueCard,
   RankItem,
@@ -8,8 +8,8 @@ import {
 } from "@/components/home/cards";
 import { HeroCarousel } from "@/components/home/hero-carousel";
 import { RankingSection } from "@/components/home/ranking-section";
-import { Rail, Section, SectionSkeleton } from "@/components/home/section";
-import { TopBar } from "@/components/home/top-bar";
+import { Rail, Section, SectionSkeleton } from "@/components/section";
+import { TopBar } from "@/components/top-bar";
 import { FireIcon } from "@/components/icons";
 import {
   getContinueReading,
@@ -27,7 +27,7 @@ import {
 export default function HomePage() {
   return (
     <>
-      <TopBar />
+      <TopBar active="/" />
       <main className="mx-auto flex w-full max-w-[1440px] flex-col gap-8 px-4 pb-24 pt-4 lg:gap-12 lg:px-12 lg:pb-[139px] lg:pt-8">
         <Suspense
           fallback={

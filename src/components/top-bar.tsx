@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { getViewerSummary } from "@/lib/server/home";
-import { BellIcon, CoinIcon, SearchIcon, UserIcon } from "../icons";
+import { BellIcon, CoinIcon, SearchIcon, UserIcon } from "./icons";
 
 const NAV = [
   { href: "/", label: "หน้าแรก" },
@@ -33,19 +33,20 @@ function SearchBox({ className = "" }: { className?: string }) {
   );
 }
 
-export function TopBar() {
+/** `active` = href of the current main section (highlighted in the desktop nav). */
+export function TopBar({ active }: { active?: string }) {
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-bg/90 backdrop-blur">
       <div className="mx-auto flex h-[59px] max-w-[1440px] items-center gap-2.5 px-4 lg:h-[75px] lg:gap-8 lg:px-12">
         <Logo />
         <nav aria-label="เมนูหลัก" className="hidden gap-6 lg:flex">
-          {NAV.map((item, i) => (
+          {NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              aria-current={i === 0 ? "page" : undefined}
+              aria-current={item.href === active ? "page" : undefined}
               className={`text-[15px] leading-[1.4] transition-colors hover:text-text ${
-                i === 0 ? "font-semibold text-text" : "text-muted"
+                item.href === active ? "font-semibold text-text" : "text-muted"
               }`}
             >
               {item.label}

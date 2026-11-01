@@ -14,3 +14,24 @@ export function timeAgo(iso: string, now: number) {
   if (hours < 24) return `${hours} ชม.ที่แล้ว`;
   return `${Math.floor(hours / 24)} วันที่แล้ว`;
 }
+
+const dateFmt = new Intl.DateTimeFormat("th-TH", { dateStyle: "medium", timeZone: "Asia/Bangkok" });
+
+/** ISO time → "1 พ.ย. 2569" (Thai time) */
+export function formatDate(iso: string) {
+  return dateFmt.format(new Date(iso));
+}
+
+/** Days left until `iso` (rounded up, ≥ 0). */
+export function daysLeft(iso: string, now: number) {
+  return Math.max(0, Math.ceil((Date.parse(iso) - now) / 86_400_000));
+}
+
+export const SERIES_STATUS_LABEL = {
+  ongoing: "กำลังอัพเดต",
+  completed: "จบแล้ว",
+  hiatus: "พักการอัพเดต",
+} as const;
+
+export const AGE_RATING_LABEL = { all: "ทุกวัย", teen: "13+", mature: "18+" } as const;
+export const AGE_RATING_YEARS = { all: 0, teen: 13, mature: 18 } as const;

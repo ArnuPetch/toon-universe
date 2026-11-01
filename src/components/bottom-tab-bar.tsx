@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CategoryIcon, HomeIcon, RankIcon, ShelfIcon, UserIcon } from "../icons";
+import { CategoryIcon, HomeIcon, RankIcon, ShelfIcon, UserIcon } from "./icons";
 
 const TABS = [
   { href: "/", label: "หน้าแรก", Icon: HomeIcon },

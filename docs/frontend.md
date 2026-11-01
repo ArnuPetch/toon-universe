@@ -20,7 +20,7 @@
 ## Components
 
 - ใช้ซ้ำก่อนสร้างใหม่: `Cover` (+ badge), `Section` / `Rail` / `SectionSkeleton`, การ์ดใน `src/components/home/cards.tsx`, ไอคอนใน `src/components/icons.tsx`
-- Component ที่จะใช้หลายหน้า → ย้ายจาก `src/components/home/` ขึ้นไป `src/components/` (เช่น `TopBar`, `BottomTabBar` เมื่อทำหน้าถัดไป → ย้ายเข้า layout ร่วม)
+- Component ที่ใช้หลายหน้าอยู่ `src/components/`: `TopBar` (`active` = href ของเมนูปัจจุบัน), `BottomTabBar`, `Section`/`Rail`/`SectionSkeleton`, `format.ts` (วิว, เวลา, วันที่, label สถานะ/เรต); ของเฉพาะหน้าอยู่ `src/components/<page>/`
 - ปกเรื่อง: ตอนนี้เป็น placeholder (gradient + ตัวอักษรแรก ข้ามสระนำ เ แ โ ใ ไ) — `TODO` ใน `cover.tsx` เมื่อเสิร์ฟรูปจาก R2
 - เป็น Server Component เป็นค่าเริ่มต้น; `"use client"` เฉพาะส่วนที่มี state/interaction (carousel, tabs) และส่ง ReactNode ที่ render บน server เข้าไปแทนการส่งข้อมูลดิบ (ดู `RankingSection`)
 
@@ -32,6 +32,9 @@
 - **ข้อมูลส่วนตัว** (coin, แจ้งเตือน, progress, ชั้นหนังสือ) ไม่ cache
 - อะไรที่ทำให้เนื้อหาสาธารณะเปลี่ยน (publish/unpublish, แก้ชื่อ/ปก/เรตอายุ, ลบ, hold, แบน) → เรียก `invalidateCatalog()` หลังสำเร็จ
 - ห้ามเรียก `Date.now()` ใน component (lint `react-hooks/purity`) → คำนวณใน data layer แล้วส่ง `now` มา
+- อ่านเวลา (`Date.now()`/`new Date()`) นอก `'use cache'` ได้เฉพาะหลัง `await connection()` ไม่งั้น Next ฟ้อง "unstable value while prerendering" — `getClaims()` เรียก `connection()` ให้แล้ว ดังนั้นโค้ดที่อยู่หลัง `getUserId()` ใช้เวลาได้เลย
+- ส่วนที่มี side effect ตอน render (เช่นนับวิว) → `await connection()` ก่อน กันถูก prerender/prefetch
+- Dynamic route: page ไม่ await `params` เอง ส่ง `params.then(...)` เข้า `<Suspense>` (ดูหน้าเรื่อง); `notFound()` ใช้ได้ (`src/app/not-found.tsx`)
 
 ## Mutations
 
@@ -49,10 +52,20 @@
 
 - `/` Home — ต้นแบบของทุกหน้า
 - `/login`
+- `/series/[slug]`, `/series/[slug]/[number]` (ดูด้านล่าง)
+
+## หน้าเรื่อง / หน้าอ่าน
+
+- ข้อมูล: `src/lib/server/series.ts` — `getSeries(slug)` (เรื่อง + ตอนที่ปล่อยแล้ว + season + สถิติ; cache เมื่อไม่ login แบบ `UPDATES_LIFE`), `getViewerState` (ติดตาม, ชั้น, progress, unlock ที่ยังไม่หมดอายุ, ผ่านเรตอายุไหม — ไม่ cache), `getEpisodePages`, `getReadingPreference`, `getRecommendations`
+- สถิติ (วิว/ผู้ติดตาม/คะแนนทั้งหมด) จาก RPC `get_series_stats` (MV, ช้าได้ ≤ 10 นาที); เรตอายุจาก RPC `viewer_meets_age_rating` — series RLS ไม่กรองอายุ จึงต้องแสดง `AgeGate` แทนปุ่มอ่าน/หน้า (RLS ของ `episode_pages` กันซ้ำอีกชั้น)
+- หน้าอ่าน: อ่านได้ = เจ้าของ / ฟรี / unlock ยังไม่หมดอายุ → ดึงหน้า + `recordEpisodeView`; ไม่งั้นแสดง `UnlockPanel` (Server Action `unlockEpisodeAction` → RPC → `router.refresh()`; coin ไม่พอ → ลิงก์ `/coins`)
+- `Reader` (client): โหมดเลื่อนลง/พลิกหน้า + ซ้าย→ขวา/ขวา→ซ้าย (ปุ่มลูกศร, คลิกครึ่งซ้าย/ขวา), จำค่าต่อเรื่อง (`saveReadingPreference`), บันทึก progress แบบ debounce (`saveReadingProgress` — ย้ายเรื่องเข้าชั้น "กำลังอ่าน" ด้วยถ้ายังไม่อยู่หรืออยู่ "อยากอ่าน")
+- รูปหน้า/ปกยังเป็น placeholder ตาม width/height — รอ R2 + signed URL
+- รายชื่อตอน: ล่าสุดก่อน (สลับได้), แสดง 30 ตอนแรกแล้วกด "ดูทั้งหมด", แยกตาม season ถ้ามี
 
 ## Routes ที่ลิงก์ไว้แล้วแต่ยังไม่มีหน้า
 
-`/series/[slug]`, `/series/[slug]/[number]` (หน้าอ่าน — เรียก `recordEpisodeView`), `/search?q=`, `/ranking` (`?kind=trending`), `/genres`, `/bookshelf`, `/profile`, `/notifications`, `/coins`, `/updates`, `/terms`, `/privacy` (ลิงก์จากหน้าสมัคร)
+`/search?q=`, `/ranking` (`?kind=trending`), `/genres`, `/bookshelf`, `/profile`, `/notifications`, `/coins`, `/updates`, `/terms`, `/privacy` (ลิงก์จากหน้าสมัคร), `/genres/[slug]` (ลิงก์จากแนวในหน้าเรื่อง)
 
 ## ตรวจงานก่อนส่ง
 
