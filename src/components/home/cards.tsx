@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import type { ContinueReading, CoverBadge, RankingEntry, SeriesSummary, UpdatedSeries } from "@/lib/server/home";
 import { Cover } from "../cover";
 import { formatViews, timeAgo } from "../format";
@@ -33,7 +34,8 @@ export function ContinueCard({ item }: { item: ContinueReading }) {
 
 const RANK_COLOR = ["text-gold", "text-[#d7d7e3]", "text-[#e08a4f]"];
 
-export function RankItem({ item, className }: { item: RankingEntry; className?: string }) {
+/** `metric` replaces the view count on the right (e.g. rating on the ranking page). */
+export function RankItem({ item, className, metric }: { item: RankingEntry; className?: string; metric?: ReactNode }) {
   return (
     <li className={className}>
       <Link
@@ -52,7 +54,7 @@ export function RankItem({ item, className }: { item: RankingEntry; className?: 
           <p className="truncate text-[15px] font-semibold">{item.title}</p>
           {item.genres[0] && <p className="text-[13px] text-muted">{item.genres[0]}</p>}
         </div>
-        <span className="shrink-0 text-[13px] leading-[1.4] text-muted">{formatViews(item.views)}</span>
+        <span className="shrink-0 text-[13px] leading-[1.4] text-muted">{metric ?? formatViews(item.views)}</span>
       </Link>
     </li>
   );

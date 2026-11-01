@@ -137,6 +137,14 @@ function CredentialsForm({
           aria-describedby={state.error ? `${id}-error` : undefined}
           className={INPUT}
         />
+        {!signup && (
+          <Link
+            href="/forgot-password"
+            className="self-end text-[13px] leading-[1.4] text-muted transition-colors hover:text-text"
+          >
+            ลืมรหัสผ่าน?
+          </Link>
+        )}
       </div>
 
       {signup && (

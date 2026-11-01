@@ -826,6 +826,11 @@ isOneToOne: false
 "review_withdrawal":
 { Args: { "p_admin_id": string,"p_approve": boolean,"p_reject_reason"?: string,"p_withdrawal_id": number }; Returns: Json
                            },
+"search_series":
+{ Args: { "p_genre_id"?: number,"p_limit"?: number,"p_offset"?: number,"p_price"?: string,"p_query"?: string,"p_sort"?: string,"p_status"?: Database["public"]['Enums']["series_status"] }; Returns: {
+              "age_rating": Database["public"]['Enums']["age_rating"],"cover_key": string,"last_episode_at": string,"latest_episode_at": string,"latest_episode_number": number,"latest_episode_price": number,"published_at": string,"rating_avg": number,"rating_count": number,"series_id": number,"slug": string,"status": Database["public"]['Enums']["series_status"],"title": string,"total_count": number,"views": number
+            }[]
+                           },
 "start_content_hold":
 { Args: { "p_admin_id": string,"p_reason": string,"p_series_id": number }; Returns: Json
                            },

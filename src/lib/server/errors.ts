@@ -12,6 +12,7 @@ export const ERROR_MESSAGES = {
   account_not_active: "บัญชีนี้ถูกระงับการใช้งาน",
   wallet_not_found: "ไม่พบกระเป๋า coin ของบัญชีนี้",
   not_admin: "ต้องเป็นผู้ดูแลระบบเท่านั้น",
+  birth_date_locked: "บันทึกวันเกิดไว้แล้ว หากต้องการแก้ไขกรุณาติดต่อผู้ดูแล",
 
   // Reader: unlock / donate
   episode_not_available: "ตอนนี้ไม่เปิดให้อ่านในขณะนี้",

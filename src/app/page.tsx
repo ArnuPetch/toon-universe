@@ -27,7 +27,7 @@ import {
 export default function HomePage() {
   return (
     <>
-      <TopBar active="/" />
+      <TopBar />
       <main className="mx-auto flex w-full max-w-[1440px] flex-col gap-8 px-4 pb-24 pt-4 lg:gap-12 lg:px-12 lg:pb-[139px] lg:pt-8">
         <Suspense
           fallback={

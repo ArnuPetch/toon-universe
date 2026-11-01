@@ -14,6 +14,8 @@
 | `20261101130000_cron_jobs.sql` | Cron jobs (pg_cron) |
 | `20261101140000_ranking.sql` | นับยอดวิว, ranking, recommendation |
 | `20261101150000_series_page.sql` | `get_series_stats` (สถิติทั้งหมดของเรื่องจาก MV), `viewer_meets_age_rating` (ผู้เรียกผ่านเรตไหม) — anon/authenticated เรียกได้, security invoker |
+| `20261101160000_reader_pages.sql` | `search_series` — ค้นหา/กรองเรื่องสาธารณะที่ผู้เรียกเห็นได้ (RLS + เรตอายุ): ข้อความ (ชื่อเรื่อง/ผู้เขียน/ชื่อแนว, `ILIKE` escape wildcard แล้ว), แนว, สถานะ, ฟรี (ไม่มีตอนเสียเงินที่ปล่อยแล้ว) / เสียเงิน, เรียง `relevance`/`popular` (วิวเดือนนี้)/`updated`/`new`/`rating`/`title`; คืนตอนล่าสุด + `total_count`; limit ≤ 60, offset ≤ 10000 — anon/authenticated, security invoker |
+| `20261101170000_birth_date_lock.sql` | trigger `lock_birth_date` บน `user_private_info`: ผู้ใช้ (anon/authenticated) ตั้งวันเกิดได้ครั้งเดียวตอนยังเป็น null — แก้/ลบหลังจากนั้น → `birth_date_locked`; `service_role` (ฝ่าย support/admin) แก้ได้ |
 
 ## Schema ต้นแบบ (`init_schema`)
 
@@ -106,6 +108,6 @@
 
 ## Tests
 
-- pgTAP: `supabase/tests/database/server_functions.test.sql`, `coin_checkout.test.sql`, `cron_jobs.test.sql`, `ranking.test.sql`, `series_page.test.sql` — ผ่าน `supabase db advisors`
+- pgTAP: `supabase/tests/database/server_functions.test.sql`, `coin_checkout.test.sql`, `cron_jobs.test.sql`, `ranking.test.sql`, `series_page.test.sql`, `birth_date_lock.test.sql`, `reader_pages.test.sql` (กรองเฉพาะ fixture id ของตัวเอง จึงรันกับ DB ที่มีข้อมูลทดสอบได้) — ผ่าน `supabase db advisors`
 - test ใช้ fixture id ตายตัว (เช่น user `…a1`) → รันกับ DB ที่ใส่ข้อมูลทดสอบหน้าเว็บไว้แล้วจะชน/ผลเพี้ยน; รันหลัง `npx supabase db reset --local`
 - รัน: `npx supabase test db`

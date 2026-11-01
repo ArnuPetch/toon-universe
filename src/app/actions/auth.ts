@@ -87,6 +87,51 @@ export async function signOut(): Promise<void> {
   redirect("/");
 }
 
+/**
+ * "Forgot password": email a recovery link that lands on /auth/confirm, which
+ * signs the user in and sends them to /reset-password. Always shows the same
+ * notice (never reveal whether an email is registered).
+ */
+export async function requestPasswordReset(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  if (!EMAIL_RE.test(email)) return { error: "รูปแบบอีเมลไม่ถูกต้อง" };
+
+  const origin = await requestOrigin();
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${origin}/auth/confirm?next=${encodeURIComponent("/reset-password")}`,
+  });
+  if (error?.code === "over_email_send_rate_limit" || error?.code === "over_request_rate_limit") {
+    return { error: AUTH_ERRORS[error.code] };
+  }
+  if (error) console.error("[action:requestPasswordReset]", error);
+  return { notice: `ถ้า ${email} มีบัญชีอยู่ เราได้ส่งลิงก์ตั้งรหัสผ่านใหม่ไปแล้ว ลิงก์ใช้ได้ครั้งเดียวและมีอายุจำกัด` };
+}
+
+/** Set a new password for the signed-in user (after the recovery link, or from /profile). */
+export async function updatePassword(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
+  const password = String(formData.get("password") ?? "");
+  if (password.length < MIN_PASSWORD) return { error: AUTH_ERRORS.weak_password };
+  if (password.length > 72) return { error: "รหัสผ่านยาวเกินไป (ไม่เกิน 72 ตัวอักษร)" };
+  if (String(formData.get("password_confirm") ?? "") !== password) {
+    return { error: "รหัสผ่านทั้งสองช่องไม่ตรงกัน" };
+  }
+
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  if (!data?.claims.sub) return { error: "ลิงก์หมดอายุหรือยังไม่ได้เข้าสู่ระบบ กรุณาขอลิงก์ใหม่" };
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) {
+    if (error.code === "same_password") return { error: "รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสเดิม" };
+    if (error.code === "reauthentication_needed") {
+      return { error: "เพื่อความปลอดภัย กรุณาออกจากระบบแล้วใช้ \"ลืมรหัสผ่าน\" เพื่อตั้งรหัสใหม่" };
+    }
+    return authError(error.code, "updatePassword", error);
+  }
+  return { notice: "เปลี่ยนรหัสผ่านแล้ว" };
+}
+
 async function requestOrigin(): Promise<string> {
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host");

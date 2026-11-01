@@ -28,7 +28,7 @@ TypeScript · Next.js · Supabase · Cloudflare R2 · Vercel Hobby (dev) → Clo
 
 ## สถานะปัจจุบัน (อัพเดต 2026-11-01)
 
-**ขั้นตอน: กำลังทำหน้าเว็บ — Home, Login, หน้าเรื่อง, หน้าอ่าน, เติม coin เสร็จ → ถัดไปคือหน้าอื่นของ Reader (ดูลำดับด้านล่าง) ทำตาม [docs/frontend.md](docs/frontend.md)**
+**ขั้นตอน: กำลังทำหน้าเว็บ — หน้าฝั่ง Reader เสร็จครบแล้ว → ถัดไปคือคอมเมนต์ + รีวิว (ดูลำดับด้านล่าง) ทำตาม [docs/frontend.md](docs/frontend.md)**
 
 เสร็จแล้ว (รายละเอียดใน docs):
 
@@ -42,6 +42,7 @@ TypeScript · Next.js · Supabase · Cloudflare R2 · Vercel Hobby (dev) → Clo
 - หน้า Login / สมัครสมาชิก `/login` (email + password, Server Actions `src/app/actions/auth.ts`, ยืนยัน email ที่ `/auth/confirm`) — [docs/server-integration.md](docs/server-integration.md#login--สมัครสมาชิก)
 - หน้า Home (`src/app/page.tsx`, ข้อมูลจาก `src/lib/server/home.ts`) + cache ข้อมูลสาธารณะ (tag `catalog`, ล้างด้วย `invalidateCatalog()`) — [docs/frontend.md](docs/frontend.md), [docs/server-integration.md](docs/server-integration.md#cache-ข้อมูลสาธารณะ-catalog)
 - หน้าเรื่อง `/series/[slug]` + หน้าอ่าน `/series/[slug]/[number]` (unlock ด้วย coin, นับวิว, บันทึก progress/โหมดอ่าน, ติดตาม/ชั้นหนังสือ, age gate) — ข้อมูลจาก `src/lib/server/series.ts`, actions `src/app/actions/reader.ts` + `bookshelf.ts` — [docs/frontend.md](docs/frontend.md#หน้าเรื่อง--หน้าอ่าน)
+- หน้าอื่นของ Reader: `/search`, `/ranking`, `/genres`, `/genres/[slug]`, `/updates` (RPC `search_series`, ข้อมูลจาก `src/lib/server/browse.ts`), `/bookshelf`, `/notifications`, `/profile` (ข้อมูลจาก `src/lib/server/library.ts`, actions `notifications.ts` + `profile.ts`), ลืมรหัสผ่าน `/forgot-password` → `/reset-password`, `/terms`, `/privacy` (ร่าง รอฝ่ายกฎหมายตรวจ) — [docs/frontend.md](docs/frontend.md#หน้า-browse--ส่วนตัว)
 - หน้าเติม coin `/coins` (แพ็ก + ยอด + ประวัติ, action `src/app/actions/coins.ts`, ข้อมูลจาก `src/lib/server/coins.ts`) — **ทดสอบกับ Stripe sandbox จริงแล้ว** (PromptPay → webhook → เติม coin) — [docs/frontend.md](docs/frontend.md#หน้าเติม-coin-coins)
 
 กฎสำคัญ (ห้ามพลาด):
@@ -58,10 +59,9 @@ TypeScript · Next.js · Supabase · Cloudflare R2 · Vercel Hobby (dev) → Clo
 
 ยังไม่ได้ทำ (เรียงตามลำดับที่ควรทำ):
 
-1. หน้าอื่นของ Reader ที่ Home ลิงก์ไว้: `/search`, `/ranking`, `/genres` (+ `/genres/[slug]` ลิงก์จากหน้าเรื่อง), `/bookshelf`, `/notifications`, `/profile` (ปุ่มออกจากระบบ → `signOut`, กรอกวันเกิด), `/updates`, `/terms`, `/privacy`, ลืมรหัสผ่าน
-2. คอมเมนต์ + รีวิว/ให้คะแนน (รายเรื่อง/รายตอน) บนหน้าเรื่อง/หน้าอ่าน
-3. หน้า Uploader / Admin
-4. เสิร์ฟรูปจาก R2 (ปก + หน้าของตอนผ่าน signed URL) — ตอนนี้เป็น placeholder (`TODO` ใน `cover.tsx`, `reader.tsx`)
+1. คอมเมนต์ + รีวิว/ให้คะแนน (รายเรื่อง/รายตอน) บนหน้าเรื่อง/หน้าอ่าน
+2. หน้า Uploader / Admin
+3. เสิร์ฟรูปจาก R2 (ปก + หน้าของตอนผ่าน signed URL) — ตอนนี้เป็น placeholder (`TODO` ใน `cover.tsx`, `reader.tsx`)
 
 ฟีเจอร์ที่จะทำทีหลัง (ยังไม่ต้องทำตอนนี้):
 

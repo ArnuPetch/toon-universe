@@ -35,3 +35,9 @@ export const SERIES_STATUS_LABEL = {
 
 export const AGE_RATING_LABEL = { all: "ทุกวัย", teen: "13+", mature: "18+" } as const;
 export const AGE_RATING_YEARS = { all: 0, teen: 13, mature: 18 } as const;
+
+export const SHELF_LABEL = {
+  reading: "กำลังอ่าน",
+  plan_to_read: "อยากอ่าน",
+  completed: "อ่านจบแล้ว",
+} as const;

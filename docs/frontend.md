@@ -20,7 +20,9 @@
 ## Components
 
 - ใช้ซ้ำก่อนสร้างใหม่: `Cover` (+ badge), `Section` / `Rail` / `SectionSkeleton`, การ์ดใน `src/components/home/cards.tsx`, ไอคอนใน `src/components/icons.tsx`
-- Component ที่ใช้หลายหน้าอยู่ `src/components/`: `TopBar` (`active` = href ของเมนูปัจจุบัน), `BottomTabBar`, `Section`/`Rail`/`SectionSkeleton`, `format.ts` (วิว, เวลา, วันที่, label สถานะ/เรต); ของเฉพาะหน้าอยู่ `src/components/<page>/`
+- Component ที่ใช้หลายหน้าอยู่ `src/components/`: `TopBar` (`active` = href ของเมนูปัจจุบัน, `search={false}` ซ่อนช่องค้นหา), `BottomTabBar`, `Section`/`Rail`/`SectionSkeleton`, `page.tsx` (`PageMain` — main ตามขนาดหน้า Home, `narrow` สำหรับหน้าฟอร์ม/รายการ; `PageTitle`; `EmptyState`; `SignInPrompt`), `form-styles.ts` (class ของ input/ปุ่ม/กล่อง error), `legal.tsx`, `format.ts` (วิว, เวลา, วันที่, label สถานะ/เรต/ชั้น); ของเฉพาะหน้าอยู่ `src/components/<page>/`
+- หน้า browse: `browse/series-grid.tsx` (`SeriesGrid` ปก 3→8 คอลัมน์), `browse/link-tabs.tsx` (`LinkTabs` segmented, `ChipRow` chip กรอง — เป็นลิงก์ทั้งหมด ไม่ใช้ JS), `browse/filters.tsx` (URL ⇄ ตัวกรอง: `parseFilters`/`filterHref`/`BrowseFilters`), `browse/pagination.tsx`
+- ค่าคงที่ที่ server component ใช้ด้วย **ห้าม export จากไฟล์ `"use client"`** (server จะได้ client reference ไม่ใช่ค่า) → ใส่ `format.ts`
 - ปกเรื่อง: ตอนนี้เป็น placeholder (gradient + ตัวอักษรแรก ข้ามสระนำ เ แ โ ใ ไ) — `TODO` ใน `cover.tsx` เมื่อเสิร์ฟรูปจาก R2
 - เป็น Server Component เป็นค่าเริ่มต้น; `"use client"` เฉพาะส่วนที่มี state/interaction (carousel, tabs) และส่ง ReactNode ที่ render บน server เข้าไปแทนการส่งข้อมูลดิบ (ดู `RankingSection`)
 
@@ -54,6 +56,7 @@
 - `/login`
 - `/series/[slug]`, `/series/[slug]/[number]` (ดูด้านล่าง)
 - `/coins` (ดูด้านล่าง)
+- หน้าอื่นของ Reader (ดู "หน้า Browse / ส่วนตัว" ด้านล่าง): `/search`, `/ranking`, `/genres`, `/genres/[slug]`, `/updates`, `/bookshelf`, `/notifications`, `/profile`, `/forgot-password`, `/reset-password`, `/terms`, `/privacy`
 
 ## หน้าเรื่อง / หน้าอ่าน
 
@@ -70,9 +73,18 @@
 - ซื้อ: `PackList` (client) → Server Action `buyCoinPackAction` (`src/app/actions/coins.ts`) → `startCoinCheckout` → `window.location.assign(checkoutUrl)`; ไม่ login → แสดงราคา + ปุ่ม "เข้าสู่ระบบเพื่อเติม coin" (`/login?next=/coins`)
 - กลับจาก Stripe: `?checkout=success&session_id=…` → banner ตามสถานะ purchase (`succeeded` / `pending` = `RefreshWhilePending` เรียก `router.refresh()` ทุก 3 วิ ≤ 1 นาที / อื่นๆ = ไม่สำเร็จ); `?checkout=canceled` → banner ยกเลิก — **หน้านี้แค่แสดงสถานะ ไม่เติม coin**
 
-## Routes ที่ลิงก์ไว้แล้วแต่ยังไม่มีหน้า
+## หน้า Browse / ส่วนตัว
 
-`/search?q=`, `/ranking` (`?kind=trending`), `/genres`, `/bookshelf`, `/profile`, `/notifications`, `/updates`, `/terms`, `/privacy` (ลิงก์จากหน้าสมัคร), `/genres/[slug]` (ลิงก์จากแนวในหน้าเรื่อง)
+- ข้อมูล browse: `src/lib/server/browse.ts` — `getGenres`/`getGenre` (cache เสมอ), `searchSeries` (RPC `search_series`; ไม่ login + ไม่มีคำค้น → cache ตามตัวกรอง, **มีคำค้น → ไม่ cache** เพราะ key เป็น input อิสระ), `getRanking` (RPC `get_series_ranking` 50 อันดับ, cache ตาม kind/period เมื่อไม่ login)
+- ตัวกรองทั้งหมดอยู่ใน URL (`?q=&genre=&status=&price=&sort=&page=`) ค่าที่ไม่รู้จักถูกทิ้งใน `parseFilters`; เปลี่ยนตัวกรอง → กลับหน้า 1; หน้าละ 24 เรื่อง
+- `/search`: ช่องค้นหาของหน้าเอง (TopBar `search={false}`), ค่าเริ่มต้นเรียง "ตรงที่สุด" เมื่อมีคำค้น / "ยอดนิยม" เมื่อไม่มี; `/genres/[slug]` ใช้ตัวกรองชุดเดียวกัน (ไม่มีแถวแนว); `/updates` = `search_series` เรียง `updated` ลิงก์ไปตอนล่าสุด
+- `/ranking?kind=views|rating|trending|new&period=day|week|month|all` — ค่าเริ่มต้น period ต่อ kind ใน `DEFAULT_PERIOD`, trending ไม่มี "ทั้งหมด"; desktop 2 คอลัมน์ (1–25 ซ้าย)
+- ข้อมูลส่วนตัว: `src/lib/server/library.ts` — `getLibrary` (ชั้น + progress + ติดตาม; "ตอนใหม่" = `last_episode_at` ใหม่กว่า progress ล่าสุด), `getNotifications` (50 รายการล่าสุด แปลง `type`+`payload` เป็นข้อความ/ลิงก์ใน `describe()` — เพิ่ม type ใหม่ต้องเพิ่มที่นี่), `getProfile`
+- `/bookshelf?tab=reading|plan_to_read|completed|following` — ย้ายชั้น/เลิกติดตามด้วย action เดิมใน `bookshelf.ts` แล้ว `router.refresh()`
+- `/notifications` — กดรายการ = mark read (`markNotificationsRead([id])`) + ไปหน้าที่เกี่ยวข้อง; "อ่านแล้วทั้งหมด"; action เรียก `refresh()` ให้ badge บน TopBar อัพเดต
+- `/profile` — แก้ชื่อที่แสดง/ชื่อผู้ใช้/แนะนำตัว (`updateProfile`), วันเกิด **ตั้งได้ครั้งเดียว** (`setBirthDate` อัพเดตเฉพาะเมื่อยังเป็น null; DB บังคับซ้ำด้วย trigger `lock_birth_date` → `birth_date_locked` แม้เรียก API ตรง — แก้ได้เฉพาะ `service_role`), เปลี่ยนรหัสผ่าน, ลิงก์ terms/privacy, ออกจากระบบ (`signOut`)
+- ลืมรหัสผ่าน: `/forgot-password` → `requestPasswordReset` (`resetPasswordForEmail`, redirect `/auth/confirm?next=/reset-password` — ข้อความเหมือนกันทุกกรณีกันเดาอีเมล) → `/auth/confirm` แลก code เป็น session → `/reset-password` (`updatePassword`); ลิงก์ "ลืมรหัสผ่าน?" อยู่ในฟอร์มเข้าสู่ระบบ; `/login`, `/forgot-password`, `/reset-password` ใช้ `AuthShell`
+- `/terms`, `/privacy` เป็นหน้า static จาก `docs/policies.md` + `coin-and-revenue.md` — **ร่าง ต้องให้ฝ่ายกฎหมายตรวจก่อนเปิดจริง**
 
 ## ตรวจงานก่อนส่ง
 

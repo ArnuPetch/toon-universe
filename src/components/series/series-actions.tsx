@@ -4,13 +4,9 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 import { setBookshelfStatus, setFollowing } from "@/app/actions/bookshelf";
 import type { BookshelfStatus } from "@/lib/server/series";
+import { SHELF_LABEL } from "../format";
 import { HeartIcon, ShelfIcon } from "../icons";
 
-const SHELF_LABEL: Record<BookshelfStatus, string> = {
-  reading: "กำลังอ่าน",
-  completed: "อ่านจบแล้ว",
-  plan_to_read: "อยากอ่าน",
-};
 
 const pill =
   "flex h-[42px] items-center gap-2 rounded-full px-[18px] text-sm font-semibold transition-colors lg:h-12 lg:px-6 lg:text-base";

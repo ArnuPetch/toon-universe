@@ -33,8 +33,11 @@ function SearchBox({ className = "" }: { className?: string }) {
   );
 }
 
-/** `active` = href of the current main section (highlighted in the desktop nav). */
-export function TopBar({ active }: { active?: string }) {
+/**
+ * `active` = href of the current main section (highlighted in the desktop nav).
+ * `search={false}` hides the search box (the search page has its own).
+ */
+export function TopBar({ active, search = true }: { active?: string; search?: boolean }) {
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-bg/90 backdrop-blur">
       <div className="mx-auto flex h-[59px] max-w-[1440px] items-center gap-2.5 px-4 lg:h-[75px] lg:gap-8 lg:px-12">
@@ -53,16 +56,18 @@ export function TopBar({ active }: { active?: string }) {
             </Link>
           ))}
         </nav>
-        <SearchBox className="hidden flex-1 lg:block" />
+        {search ? <SearchBox className="hidden flex-1 lg:block" /> : <div className="hidden flex-1 lg:block" />}
         <div className="ml-auto flex items-center gap-2.5 lg:ml-0 lg:gap-8">
           <Suspense fallback={<div className="h-[34px] w-[140px] lg:h-10 lg:w-[255px]" />}>
             <ViewerActions />
           </Suspense>
         </div>
       </div>
-      <div className="px-4 pb-0 pt-3 lg:hidden">
-        <SearchBox />
-      </div>
+      {search && (
+        <div className="px-4 pb-0 pt-3 lg:hidden">
+          <SearchBox />
+        </div>
+      )}
     </header>
   );
 }

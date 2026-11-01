@@ -73,7 +73,7 @@ async function ranking(db: Db, kind: "views" | "trending" | "updated", period: R
 }
 
 /** Genre names (Thai) per series id. */
-async function genresFor(db: Db, seriesIds: number[]): Promise<Map<number, string[]>> {
+export async function genresFor(db: Db, seriesIds: number[]): Promise<Map<number, string[]>> {
   const map = new Map<number, string[]>();
   if (seriesIds.length === 0) return map;
   const { data, error } = await db
@@ -122,7 +122,7 @@ function toSummary(row: RankedSeries, genres: Map<number, string[]>): SeriesSumm
   };
 }
 
-function badgeFor(episode: { price: number; released_at: string | null } | undefined, now: number): CoverBadge {
+export function badgeFor(episode: { price: number; released_at: string | null } | undefined, now: number): CoverBadge {
   if (episode?.released_at && now - Date.parse(episode.released_at) < UP_BADGE_MS) return { kind: "up" };
   if (!episode || episode.price === 0) return { kind: "free" };
   return { kind: "coin", price: episode.price };
