@@ -98,7 +98,7 @@ function Row({
   controls,
 }: {
   href: string;
-  item: { id: number; title: string };
+  item: { id: number; title: string; coverKey: string | null };
   lines: string;
   progress?: number;
   tag?: string;
@@ -107,7 +107,7 @@ function Row({
   return (
     <li className="flex items-center gap-2 rounded-xl bg-surface pr-3 transition-colors hover:bg-surface-2">
       <Link href={href} className="flex min-w-0 flex-1 items-center gap-3.5 p-3">
-        <Cover id={item.id} title={item.title} className="h-24 w-[72px] shrink-0 rounded-lg" initialClassName="text-[28px] left-2.5 bottom-2.5" />
+        <Cover id={item.id} coverKey={item.coverKey} title={item.title} className="h-24 w-[72px] shrink-0 rounded-lg" initialClassName="text-[28px] left-2.5 bottom-2.5" />
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
           <p className="truncate text-[15px] font-semibold leading-[1.4]">{item.title}</p>
           <p className="truncate text-[13px] leading-[1.4] text-muted">

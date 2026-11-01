@@ -137,8 +137,13 @@ Client เขียนตาราง `comments` / `reviews` / `reports` ตร�
 
 - กฎของ uploader ที่ DB บังคับอยู่แล้ว (RLS/trigger เดิม): เขียนได้เฉพาะเรื่องตัวเอง, บัญชีถูกระงับ → 42501, ราคาเปลี่ยนได้เดือนละครั้งหลังปล่อย + ตอนที่ปล่อยแล้วเลื่อนเวลาไม่ได้ (23514), ลบตอนตรงได้เฉพาะที่ยังไม่ปล่อย (ที่ปล่อยแล้วต้อง `remove_episode`)
 
+## R2 object keys (`r2_storage_keys`)
+
+- uploader เขียน `episode_pages` / `series` ตรงผ่าน RLS → ถ้าไม่กัน จะตั้ง `storage_key` ชี้หน้าตอนเสียเงินของเรื่องอื่นแล้วได้ signed URL ผ่านตอนฟรีของตัวเอง
+- trigger `check_storage_key` / `check_cover_key` (เฉพาะ `current_user = 'authenticated'`; service_role/migration ข้าม): `storage_key` ต้องเป็น `episodes/<series_id>/<episode_id>/<batch>/<NNN>.<ext>`, `cover_key` ต้องเป็น `covers/<series_id>/<uuid>.(webp|jpg)` → ไม่งั้น `invalid_storage_key`
+
 ## Tests
 
-- pgTAP: `supabase/tests/database/server_functions.test.sql`, `coin_checkout.test.sql`, `cron_jobs.test.sql`, `ranking.test.sql`, `series_page.test.sql`, `birth_date_lock.test.sql`, `reader_pages.test.sql`, `comments_reviews.test.sql`, `studio_admin.test.sql` (กรองเฉพาะ fixture id ของตัวเอง จึงรันกับ DB ที่มีข้อมูลทดสอบได้) — ผ่าน `supabase db advisors`
+- pgTAP: `supabase/tests/database/server_functions.test.sql`, `coin_checkout.test.sql`, `cron_jobs.test.sql`, `ranking.test.sql`, `series_page.test.sql`, `birth_date_lock.test.sql`, `reader_pages.test.sql`, `comments_reviews.test.sql`, `studio_admin.test.sql`, `r2_storage_keys.test.sql` (กรองเฉพาะ fixture id ของตัวเอง จึงรันกับ DB ที่มีข้อมูลทดสอบได้) — ผ่าน `supabase db advisors`
 - test ใช้ fixture id ตายตัว (เช่น user `…a1`) → รันกับ DB ที่ใส่ข้อมูลทดสอบหน้าเว็บไว้แล้วจะชน/ผลเพี้ยน; รันหลัง `npx supabase db reset --local`
 - รัน: `npx supabase test db`

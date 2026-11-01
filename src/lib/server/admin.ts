@@ -349,6 +349,7 @@ export type AdminSeriesRow = {
   id: number;
   slug: string;
   title: string;
+  coverKey: string | null;
   visibility: Enums["series_visibility"];
   moderation: Enums["moderation_status"];
   ageRating: Enums["age_rating"];
@@ -365,7 +366,7 @@ export async function findSeries(query: string, filter: SeriesFilter): Promise<A
   let q = c
     .from("series")
     .select(
-      "id, slug, title, visibility, moderation_status, age_rating, deleted_at, created_at, uploader:profiles!series_uploader_id_fkey(id, display_name, username, status), content_holds(reason, started_at, ended_at)",
+      "id, slug, title, cover_key, visibility, moderation_status, age_rating, deleted_at, created_at, uploader:profiles!series_uploader_id_fkey(id, display_name, username, status), content_holds(reason, started_at, ended_at)",
     )
     .order("created_at", { ascending: false })
     .limit(60);
@@ -385,6 +386,7 @@ export async function findSeries(query: string, filter: SeriesFilter): Promise<A
       id: s.id,
       slug: s.slug,
       title: s.title,
+      coverKey: s.cover_key,
       visibility: s.visibility,
       moderation: s.moderation_status,
       ageRating: s.age_rating,

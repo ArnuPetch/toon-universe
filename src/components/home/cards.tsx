@@ -11,7 +11,7 @@ export function ContinueCard({ item }: { item: ContinueReading }) {
       href={`/series/${item.slug}/${item.episodeNumber}`}
       className="flex h-[120px] w-[280px] shrink-0 snap-start items-center gap-3.5 rounded-xl bg-surface p-3 transition-colors hover:bg-surface-2 lg:w-auto"
     >
-      <Cover id={item.id} title={item.title} className="h-24 w-[72px] shrink-0 rounded-lg" initialClassName="text-[28px] left-2.5 bottom-2.5" />
+      <Cover id={item.id} coverKey={item.coverKey} title={item.title} className="h-24 w-[72px] shrink-0 rounded-lg" initialClassName="text-[28px] left-2.5 bottom-2.5" />
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <p className="truncate text-[15px] font-semibold leading-[1.4]">{item.title}</p>
         <p className="text-[13px] leading-[1.4] text-muted">
@@ -49,7 +49,7 @@ export function RankItem({ item, className, metric }: { item: RankingEntry; clas
         >
           {item.rank}
         </span>
-        <Cover id={item.id} title={item.title} className="h-16 w-12 shrink-0 rounded-[10px]" />
+        <Cover id={item.id} coverKey={item.coverKey} title={item.title} className="h-16 w-12 shrink-0 rounded-[10px]" />
         <div className="flex min-w-0 flex-1 flex-col gap-1 leading-[1.4]">
           <p className="truncate text-[15px] font-semibold">{item.title}</p>
           {item.genres[0] && <p className="text-[13px] text-muted">{item.genres[0]}</p>}
@@ -65,6 +65,7 @@ export function UpdatedCard({ item, now }: { item: UpdatedSeries; now: number })
     <Link href={`/series/${item.slug}/${item.episodeNumber}`} className="group flex min-w-0 flex-col gap-2">
       <Cover
         id={item.id}
+        coverKey={item.coverKey}
         title={item.title}
         badge={item.badge}
         className="aspect-[3/4] w-full rounded-xl transition-transform group-hover:-translate-y-0.5"
@@ -89,6 +90,7 @@ export function TrendingCard({ item }: { item: SeriesSummary & { badge?: CoverBa
     >
       <Cover
         id={item.id}
+        coverKey={item.coverKey}
         title={item.title}
         badge={item.badge}
         className="aspect-[3/4] w-full rounded-xl transition-transform group-hover:-translate-y-0.5"

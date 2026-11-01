@@ -1,4 +1,5 @@
 import "server-only";
+import { pageUrls } from "@/lib/r2/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Database } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
@@ -274,7 +275,7 @@ export async function getStudioSeries(seriesId: number): Promise<StudioSeries | 
 
 // --- One episode ---
 
-export type StudioPage = { id: number; pageNumber: number; storageKey: string; width: number | null; height: number | null };
+export type StudioPage = { id: number; pageNumber: number; url: string | null; width: number | null; height: number | null };
 
 export type StudioEpisodeDetail = {
   series: Pick<StudioSeries, "id" | "slug" | "title" | "seasons" | "moderation">;
@@ -308,10 +309,11 @@ export async function getStudioEpisode(
       .eq("episode_id", episode.id)
       .order("page_number");
     if (error) console.error("[studio:pages]", error);
-    pages = (data ?? []).map((p) => ({
+    const urls = await pageUrls((data ?? []).map((p) => p.storage_key));
+    pages = (data ?? []).map((p, i) => ({
       id: p.id,
       pageNumber: p.page_number,
-      storageKey: p.storage_key,
+      url: urls[i],
       width: p.width,
       height: p.height,
     }));

@@ -76,6 +76,12 @@ export const ERROR_MESSAGES = {
 
   // Admin moderation (*_studio_admin.sql)
   report_not_open: "รายงานนี้ถูกจัดการไปแล้ว",
+
+  // R2 uploads (*_r2_storage_keys.sql + app level)
+  invalid_storage_key: "ไฟล์ที่อัพโหลดไม่ตรงกับเรื่อง/ตอนนี้",
+  storage_unavailable: "ที่เก็บรูปขัดข้องชั่วคราว กรุณาลองใหม่อีกครั้ง",
+  upload_incomplete: "อัพโหลดรูปไม่ครบ กรุณาลองใหม่อีกครั้ง",
+  upload_too_large: "ไฟล์ใหญ่เกินกำหนด",
 } as const;
 
 export type ErrorCode = keyof typeof ERROR_MESSAGES;

@@ -28,7 +28,7 @@ TypeScript · Next.js · Supabase · Cloudflare R2 · Vercel Hobby (dev) → Clo
 
 ## สถานะปัจจุบัน (อัพเดต 2026-11-02)
 
-**ขั้นตอน: หน้าเว็บ Reader / Uploader / Admin เสร็จแล้ว → ถัดไปคือเสิร์ฟ/อัพโหลดรูปจาก R2 (ดูลำดับด้านล่าง)**
+**ขั้นตอน: R2 (อัพโหลด + เสิร์ฟรูป) เสร็จ + ตั้ง bucket/CORS แล้ว → ถัดไปคือทดสอบอัพโหลดผ่านหน้า `/studio`, แล้ว watermark / กราฟสถิติ**
 
 เสร็จแล้ว (รายละเอียดใน docs):
 
@@ -45,7 +45,7 @@ TypeScript · Next.js · Supabase · Cloudflare R2 · Vercel Hobby (dev) → Clo
 - หน้าอื่นของ Reader: `/search`, `/ranking`, `/genres`, `/genres/[slug]`, `/updates` (RPC `search_series`, ข้อมูลจาก `src/lib/server/browse.ts`), `/bookshelf`, `/notifications`, `/profile` (ข้อมูลจาก `src/lib/server/library.ts`, actions `notifications.ts` + `profile.ts`), ลืมรหัสผ่าน `/forgot-password` → `/reset-password`, `/terms`, `/privacy` (ร่าง รอฝ่ายกฎหมายตรวจ) — [docs/frontend.md](docs/frontend.md#หน้า-browse--ส่วนตัว)
 - หน้าเติม coin `/coins` (แพ็ก + ยอด + ประวัติ, action `src/app/actions/coins.ts`, ข้อมูลจาก `src/lib/server/coins.ts`) — **ทดสอบกับ Stripe sandbox จริงแล้ว** (PromptPay → webhook → เติม coin) — [docs/frontend.md](docs/frontend.md#หน้าเติม-coin-coins)
 - คอมเมนต์ + รีวิว/ให้คะแนน รายเรื่อง/รายตอน (ตอบกลับ 1 ชั้น + แจ้งเตือน, spoiler, แก้/ลบ, รายงาน) — กฎใน DB `20261101180000_comments_reviews.sql`, ข้อมูล `src/lib/server/social.ts`, actions `src/app/actions/social.ts`, UI `src/components/social/` — [docs/database.md](docs/database.md#คอมเมนต์--รีวิว-comments_reviews), [docs/frontend.md](docs/frontend.md#คอมเมนต์--รีวิว)
-- หน้า Uploader `/studio` (เรื่อง, season, ตอน, ราคา, ตั้งเวลา, อัพโหลดหน้าแบบ UI — ยังไม่เก็บรูป, สถิติ, รายได้/บัญชีพร้อมเพย์/ถอน) + หน้า Admin `/admin` (report, ซ่อนคอมเมนต์/รีวิว, ปิดตรวจ/ถอดเรื่อง, ระงับ/แบน/ปลด, verified badge, อนุมัติถอน/บันทึกโอน) — migration `20261102090000_studio_admin.sql`, ข้อมูล `src/lib/server/studio.ts` + `admin.ts`, actions `studio.ts` + `admin.ts` — [docs/frontend.md](docs/frontend.md#สตูดิโอ-uploader-studio), [docs/database.md](docs/database.md#studio--admin-studio_admin)
+- หน้า Uploader `/studio` (เรื่อง, season, ตอน, ราคา, ตั้งเวลา, อัพโหลดหน้า/ปก, สถิติ, รายได้/บัญชีพร้อมเพย์/ถอน) + หน้า Admin `/admin` (report, ซ่อนคอมเมนต์/รีวิว, ปิดตรวจ/ถอดเรื่อง, ระงับ/แบน/ปลด, verified badge, อนุมัติถอน/บันทึกโอน) — migration `20261102090000_studio_admin.sql`, ข้อมูล `src/lib/server/studio.ts` + `admin.ts`, actions `studio.ts` + `admin.ts` — [docs/frontend.md](docs/frontend.md#สตูดิโอ-uploader-studio), [docs/database.md](docs/database.md#studio--admin-studio_admin)
 
 กฎสำคัญ (ห้ามพลาด):
 
@@ -59,9 +59,11 @@ TypeScript · Next.js · Supabase · Cloudflare R2 · Vercel Hobby (dev) → Clo
 - หน้าเว็บ: ใช้ token สีใน `globals.css` ห้าม hardcode, ส่วนที่อ่าน session อยู่ใต้ `<Suspense>`, ข้อมูลส่วนตัวไม่ cache
 - **หน้าใหม่ไม่ต้องดู Figma แล้ว** (ไม่ต้องเรียก Figma MCP) — ใช้หน้า Home (`src/app/page.tsx` + `src/components/home/`) เป็นต้นแบบเรื่องหน้าตา, layout, spacing และ component
 
+- R2: อัพโหลดตรงจาก browser ด้วย presigned PUT (หน้าของตอน + .zip, ปก) และเสิร์ฟรูป (หน้าของตอนผ่าน signed URL จาก bucket private, ปกจาก bucket public) + trigger กัน key ข้ามเรื่อง — `src/lib/r2/`, migration `20261102120000_r2_storage_keys.sql` — [docs/server-integration.md](docs/server-integration.md#r2-รูปปก--หน้าของตอน) (มีขั้นตอนตั้ง bucket/CORS) — ทดสอบกับ bucket จริงแล้ว (presigned PUT/HEAD/signed GET/DELETE/CORS, หน้าอ่าน + ปก) **ยังไม่ได้ลองอัพโหลดผ่าน UI `/studio`**
+
 ยังไม่ได้ทำ (เรียงตามลำดับที่ควรทำ):
 
-1. R2: อัพโหลด (presigned PUT ใน `page-uploader.tsx` + รองรับ .zip, ปกเรื่อง) และเสิร์ฟรูป (ปก + หน้าของตอนผ่าน signed URL) — ตอนนี้เป็น placeholder (`TODO` / `TODO(R2)` ใน `cover.tsx`, `reader.tsx`, `page-uploader.tsx`, `saveEpisodePages`)
+1. ทดสอบอัพโหลดหน้า/.zip/ปกผ่าน `/studio`, งานเก็บกวาด batch ที่อัพโหลดแล้วไม่ได้บันทึก
 2. Watermark อัตโนมัติ, กราฟสถิติรายวันของ uploader
 
 ฟีเจอร์ที่จะทำทีหลัง (ยังไม่ต้องทำตอนนี้):

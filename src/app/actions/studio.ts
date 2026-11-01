@@ -9,6 +9,21 @@ import { type ActionResult, type ErrorCode, ERROR_MESSAGES, fail, isErrorCode } 
 import { removeEpisode, removeSeries, requestWithdrawal } from "@/lib/server/rpc";
 import type { Database } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
+import {
+  BATCH_RE,
+  COVER_CACHE_CONTROL,
+  COVER_TYPES,
+  type CoverContentType,
+  isCoverKeyOf,
+  MAX_COVER_BYTES,
+  MAX_PAGE_BYTES,
+  MAX_PAGES,
+  PAGE_CACHE_CONTROL,
+  PAGE_TYPES,
+  type PageContentType,
+  pageKey,
+} from "@/lib/r2/shared";
+import { deleteObjects, headObject, isR2Configured, mapLimit, presignPut } from "@/lib/r2/server";
 
 // Uploader studio. Content is written straight to the tables as the signed-in
 // user: RLS pins every row to series the user owns (and blocks suspended /
@@ -28,7 +43,6 @@ const MODES: readonly Enums["reading_mode"][] = ["vertical", "paged"];
 const DIRECTIONS: readonly Enums["reading_direction"][] = ["ltr", "rtl"];
 const SLUG_RE = /^[a-z0-9-]{1,100}$/;
 const MAX_PRICE = 1000;
-const MAX_PAGES = 300;
 
 function validId(id: unknown): id is number {
   return typeof id === "number" && Number.isSafeInteger(id) && id > 0;
@@ -340,62 +354,209 @@ export async function deleteEpisode(seriesId: number, episodeId: number): Promis
     const result = await removeEpisode(episodeId);
     if (!result.ok) return result;
   } else {
+    // Unreleased → nobody can have read it: drop its images from R2 too.
+    const pages = await db.from("episode_pages").select("storage_key").eq("episode_id", episodeId);
+    if (pages.error) return fail(writeError("deleteEpisode", pages.error));
     const del = await db.from("episodes").delete().eq("id", episodeId).eq("series_id", seriesId);
     if (del.error) return fail(writeError("deleteEpisode", del.error));
+    await deleteObjects("pages", pages.data.map((p) => p.storage_key).filter((k) => k.startsWith("episodes/")));
     invalidateCatalog();
   }
   redirect(`/studio/series/${seriesId}`);
 }
 
-export type PageInput = { width: number; height: number; ext: string };
+// =============================================================================
+// Pages + cover (R2)
+// =============================================================================
+//
+// Browser uploads go straight to R2 with presigned PUTs:
+//   1. prepare*Upload  → checks ownership, picks the object keys, signs PUTs
+//   2. browser PUTs the files
+//   3. save*           → rebuilds the keys from (series, episode, batch) — the
+//                        client never sends a key — HEADs every object, then
+//                        writes the rows and deletes the replaced objects.
+// The DB also rejects keys outside the series/episode prefix
+// (*_r2_storage_keys.sql), since uploaders can write these tables directly.
+
+/** The user's own episode (or series when episodeId is null), else null. */
+async function ownsEpisode(userId: string, seriesId: number, episodeId: number | null) {
+  const db = await createClient();
+  const series = await db.from("series").select("id").eq("id", seriesId).eq("uploader_id", userId).maybeSingle();
+  if (series.error) throw series.error;
+  if (!series.data) return false;
+  if (episodeId === null) return true;
+  const ep = await db.from("episodes").select("id").eq("id", episodeId).eq("series_id", seriesId).maybeSingle();
+  if (ep.error) throw ep.error;
+  return ep.data !== null;
+}
+
+export type PageFile = { contentType: string; size: number };
+export type PresignedPut = { url: string; headers: Record<string, string> };
+
+/** Step 1 of saving pages: presigned PUTs for `files` (in reading order). */
+export async function prepareEpisodePagesUpload(
+  seriesId: number,
+  episodeId: number,
+  files: PageFile[],
+): Promise<ActionResult<{ batch: string; uploads: PresignedPut[] }>> {
+  const userId = await requireUploader();
+  if (!validId(seriesId) || !validId(episodeId) || !Array.isArray(files)) return fail("invalid_input");
+  if (files.length === 0 || files.length > MAX_PAGES) return fail("invalid_input");
+  if (!files.every((f) => typeof f?.contentType === "string" && Object.hasOwn(PAGE_TYPES, f.contentType) && validId(f.size))) {
+    return fail("invalid_input");
+  }
+  if (files.some((f) => f.size > MAX_PAGE_BYTES)) return fail("upload_too_large");
+  if (!isR2Configured()) return fail("storage_unavailable");
+
+  try {
+    if (!(await ownsEpisode(userId, seriesId, episodeId))) return fail("episode_not_found");
+    const batch = randomBatch();
+    const uploads = await Promise.all(
+      files.map((f, i) =>
+        presignPut("pages", pageKey(seriesId, episodeId, batch, i, PAGE_TYPES[f.contentType as PageContentType]), {
+          contentType: f.contentType,
+          size: f.size,
+          cacheControl: PAGE_CACHE_CONTROL,
+        }),
+      ),
+    );
+    return { ok: true, data: { batch, uploads } };
+  } catch (e) {
+    console.error("[studio:preparePages]", e);
+    return fail("storage_unavailable");
+  }
+}
+
+function randomBatch() {
+  const bytes = crypto.getRandomValues(new Uint8Array(12));
+  return [...bytes].map((b) => "abcdefghijklmnopqrstuvwxyz0123456789"[b % 36]).join("");
+}
+
+export type PageInput = { contentType: string; width: number; height: number };
 
 /**
- * Replace all pages of an episode with `pages` (in reading order).
- *
- * TODO(R2): images aren't stored yet — this only records page metadata with a
- * placeholder storage key. When R2 is wired up: upload each file with a
- * presigned PUT first, then save the real keys here.
+ * Step 2: replace all pages of an episode with the uploaded `batch` (pages in
+ * the same order as prepareEpisodePagesUpload). Every object must exist in R2.
  */
 export async function saveEpisodePages(
   seriesId: number,
   episodeId: number,
+  batch: string,
   pages: PageInput[],
 ): Promise<ActionResult<{ count: number }>> {
-  await requireUploader();
-  if (!validId(seriesId) || !validId(episodeId) || !Array.isArray(pages)) return fail("invalid_input");
-  if (pages.length === 0 || pages.length > MAX_PAGES) return fail("invalid_input");
+  const userId = await requireUploader();
+  if (!validId(seriesId) || !validId(episodeId) || typeof batch !== "string" || !BATCH_RE.test(batch)) {
+    return fail("invalid_input");
+  }
+  if (!Array.isArray(pages) || pages.length === 0 || pages.length > MAX_PAGES) return fail("invalid_input");
   const valid = pages.every(
     (p) =>
       validId(p?.width) && validId(p?.height) && p.width <= 20_000 && p.height <= 60_000 &&
-      typeof p.ext === "string" && /^(jpe?g|png|webp|gif|avif)$/.test(p.ext),
+      typeof p.contentType === "string" && Object.hasOwn(PAGE_TYPES, p.contentType),
   );
   if (!valid) return fail("invalid_input");
+  if (!isR2Configured()) return fail("storage_unavailable");
+
+  const keys = pages.map((p, i) => pageKey(seriesId, episodeId, batch, i, PAGE_TYPES[p.contentType as PageContentType]));
+  try {
+    if (!(await ownsEpisode(userId, seriesId, episodeId))) return fail("episode_not_found");
+    const heads = await mapLimit(keys, 8, (k) => headObject("pages", k));
+    if (heads.some((h) => h === null)) return fail("upload_incomplete");
+    if (heads.some((h) => h!.size > MAX_PAGE_BYTES || !h!.contentType.startsWith("image/"))) {
+      await deleteObjects("pages", keys);
+      return fail("upload_too_large");
+    }
+  } catch (e) {
+    console.error("[studio:verifyPages]", e);
+    return fail("storage_unavailable");
+  }
 
   const db = await createClient();
-  const { data: ep, error } = await db
-    .from("episodes")
-    .select("id")
-    .eq("id", episodeId)
-    .eq("series_id", seriesId)
-    .maybeSingle();
-  if (error) return fail(writeError("pages", error));
-  if (!ep) return fail("episode_not_found");
+  const old = await db.from("episode_pages").select("storage_key").eq("episode_id", episodeId);
+  if (old.error) return fail(writeError("pages", old.error));
 
-  const batch = crypto.randomUUID().slice(0, 8);
   const del = await db.from("episode_pages").delete().eq("episode_id", episodeId);
   if (del.error) return fail(writeError("pages", del.error));
   const ins = await db.from("episode_pages").insert(
     pages.map((p, i) => ({
       episode_id: episodeId,
       page_number: i + 1,
-      storage_key: `pending/${seriesId}/${episodeId}/${batch}/${String(i + 1).padStart(3, "0")}.${p.ext}`,
+      storage_key: keys[i],
       width: p.width,
       height: p.height,
     })),
   );
-  if (ins.error) return fail(writeError("pages", ins.error));
+  if (ins.error) {
+    // Nothing references the new batch; the old rows are gone but their
+    // objects are still there — the uploader can simply save again.
+    await deleteObjects("pages", keys);
+    return fail(writeError("pages", ins.error));
+  }
+  await deleteObjects(
+    "pages",
+    old.data.map((r) => r.storage_key).filter((k) => k.startsWith("episodes/") && !keys.includes(k)),
+  );
   refresh();
   return { ok: true, data: { count: pages.length } };
+}
+
+/** Presigned PUT for a new cover (already resized to webp/jpg in the browser). */
+export async function prepareCoverUpload(
+  seriesId: number,
+  file: PageFile,
+): Promise<ActionResult<{ key: string; upload: PresignedPut }>> {
+  const userId = await requireUploader();
+  if (!validId(seriesId) || typeof file?.contentType !== "string" || !Object.hasOwn(COVER_TYPES, file.contentType)) {
+    return fail("invalid_input");
+  }
+  if (!validId(file.size)) return fail("invalid_input");
+  if (file.size > MAX_COVER_BYTES) return fail("upload_too_large");
+  if (!isR2Configured()) return fail("storage_unavailable");
+  try {
+    if (!(await ownsEpisode(userId, seriesId, null))) return fail("series_not_found");
+    const key = `covers/${seriesId}/${crypto.randomUUID()}.${COVER_TYPES[file.contentType as CoverContentType]}`;
+    const upload = await presignPut("public", key, {
+      contentType: file.contentType,
+      size: file.size,
+      cacheControl: COVER_CACHE_CONTROL,
+    });
+    return { ok: true, data: { key, upload } };
+  } catch (e) {
+    console.error("[studio:prepareCover]", e);
+    return fail("storage_unavailable");
+  }
+}
+
+/** Set (key) or remove (null) the cover. The old cover object is deleted. */
+export async function saveSeriesCover(seriesId: number, key: string | null): Promise<ActionResult<null>> {
+  const userId = await requireUploader();
+  if (!validId(seriesId) || (key !== null && (typeof key !== "string" || !isCoverKeyOf(seriesId, key)))) {
+    return fail("invalid_input");
+  }
+  if (key !== null) {
+    try {
+      const head = await headObject("public", key);
+      if (!head) return fail("upload_incomplete");
+      if (head.size > MAX_COVER_BYTES) {
+        await deleteObjects("public", [key]);
+        return fail("upload_too_large");
+      }
+    } catch (e) {
+      console.error("[studio:verifyCover]", e);
+      return fail("storage_unavailable");
+    }
+  }
+
+  const db = await createClient();
+  const old = await db.from("series").select("cover_key").eq("id", seriesId).eq("uploader_id", userId).maybeSingle();
+  if (old.error) return fail(writeError("cover", old.error));
+  if (!old.data) return fail("series_not_found");
+  const { error } = await db.from("series").update({ cover_key: key }).eq("id", seriesId).eq("uploader_id", userId);
+  if (error) return fail(writeError("cover", error));
+  if (old.data.cover_key && old.data.cover_key !== key) await deleteObjects("public", [old.data.cover_key]);
+  invalidateCatalog();
+  refresh();
+  return { ok: true, data: null };
 }
 
 // =============================================================================

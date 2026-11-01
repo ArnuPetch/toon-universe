@@ -66,7 +66,7 @@ async function SeriesList({ search }: { search: Promise<Search> }) {
             return (
               <li key={s.id} className="flex flex-col gap-4 rounded-[20px] bg-surface p-4 lg:flex-row lg:items-center lg:p-5">
                 <div className="flex min-w-0 flex-1 gap-4">
-                  <Cover id={s.id} title={s.title} className="aspect-[3/4] w-16 shrink-0 rounded-lg" />
+                  <Cover id={s.id} coverKey={s.coverKey} title={s.title} className="aspect-[3/4] w-16 shrink-0 rounded-lg" />
                   <div className="flex min-w-0 flex-col gap-1.5">
                     <div className="flex flex-wrap gap-1.5">
                       <Pill tone={VISIBILITY_TONE[s.visibility]}>{VISIBILITY_LABEL[s.visibility]}</Pill>

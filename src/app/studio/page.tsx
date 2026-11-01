@@ -115,7 +115,7 @@ function SeriesRow({ s }: { s: StudioSeriesRow }) {
       href={`/studio/series/${s.id}`}
       className="flex gap-4 rounded-[20px] bg-surface p-3 transition-colors hover:bg-surface-2 lg:p-4"
     >
-      <Cover id={s.id} title={s.title} className="aspect-[3/4] w-[76px] shrink-0 rounded-xl lg:w-[92px]" />
+      <Cover id={s.id} coverKey={s.coverKey} title={s.title} className="aspect-[3/4] w-[76px] shrink-0 rounded-xl lg:w-[92px]" />
       <div className="flex min-w-0 flex-1 flex-col gap-2 py-0.5">
         <div className="flex flex-wrap items-center gap-1.5">
           <Pill tone={VISIBILITY_TONE[s.visibility]}>{VISIBILITY_LABEL[s.visibility]}</Pill>

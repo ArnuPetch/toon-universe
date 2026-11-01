@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
 import { addToBookshelf } from "@/app/actions/bookshelf";
+import { coverUrl } from "@/lib/r2/shared";
 import type { HeroSeries } from "@/lib/server/home";
 import { coverInitial } from "../cover";
 import { SERIES_STATUS_LABEL } from "../format";
@@ -71,6 +72,7 @@ export function HeroCarousel({ items }: { items: HeroSeries[] }) {
 function Slide({ item, animate }: { item: HeroSeries; animate: boolean }) {
   const href = `/series/${item.slug}`;
   const first = item.firstEpisode;
+  const cover = coverUrl(item.coverKey);
 
   return (
     <div className={animate ? "animate-[fade_400ms_ease-out]" : undefined}>
@@ -80,9 +82,14 @@ function Slide({ item, animate }: { item: HeroSeries; animate: boolean }) {
         aria-hidden="true"
         className="absolute right-5 top-5 grid h-40 w-[120px] place-items-center overflow-hidden rounded-xl bg-linear-to-b from-[#e7b2ff] to-[#6b2bd6] lg:right-20 lg:top-10 lg:h-[340px] lg:w-[260px] lg:rounded-2xl"
       >
-        <span className="text-[64px] font-bold leading-none text-white/35 lg:text-[140px]">
-          {coverInitial(item.title)}
-        </span>
+        {cover ? (
+          // eslint-disable-next-line @next/next/no-img-element -- resized webp from R2, immutable key
+          <img src={cover} alt="" fetchPriority="high" decoding="async" className="absolute inset-0 size-full object-cover" />
+        ) : (
+          <span className="text-[64px] font-bold leading-none text-white/35 lg:text-[140px]">
+            {coverInitial(item.title)}
+          </span>
+        )}
       </Link>
 
       <div className="absolute inset-x-5 bottom-5 flex flex-col items-start gap-2.5 lg:inset-x-auto lg:bottom-auto lg:left-12 lg:top-1/2 lg:w-[620px] lg:-translate-y-1/2 lg:gap-3.5">

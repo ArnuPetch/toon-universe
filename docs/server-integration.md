@@ -77,6 +77,25 @@
 - ทุกอย่างติด tag `catalog` → **อะไรที่ซ่อน/แสดงเนื้อหาต่อสาธารณะต้องเรียก `invalidateCatalog()`** (ล้างทันที `expire: 0`) — ตอนนี้ต่อไว้ที่ `removeSeries`, `removeEpisode`, `startContentHold`, `endContentHold`, `banUser` ใน `rpc.ts`
   - หน้า uploader (`src/app/actions/studio.ts`) เรียกหลังแก้เรื่อง/season/ตอน/เผยแพร่ และ `setUserVerified` (badge แสดงบนหน้าเรื่อง)
 
+## R2 (รูปปก + หน้าของตอน)
+
+- `src/lib/r2/server.ts` (server-only, `aws4fetch` — fetch + WebCrypto ใช้ได้ทั้ง Vercel และ Workers) + `src/lib/r2/shared.ts` (ชนิดไฟล์, ขนาดสูงสุด, รูปแบบ key, `coverUrl()` — ใช้ได้ทั้ง browser/server)
+- 2 bucket: **`R2_BUCKET` (private)** = หน้าของตอน เข้าถึงได้ทาง signed GET เท่านั้น; **`R2_PUBLIC_BUCKET`** = ปก เสิร์ฟจาก `NEXT_PUBLIC_R2_PUBLIC_URL` (r2.dev ตอน dev, custom domain ตอน production) — ปกอยู่ใน cache `catalog` ที่ใช้ร่วมกันทุกคน จึงใช้ signed URL ไม่ได้
+- อัพโหลด = browser PUT ตรงเข้า R2 ด้วย presigned URL (ไม่ผ่าน server ของเรา): `prepare*Upload` ตรวจว่าเป็นเจ้าของ + เลือก key + sign (Content-Type, Content-Length, Cache-Control ถูก sign ด้วย ส่งไม่ตรง = 403) → PUT → `save*` สร้าง key ใหม่จาก (series, episode, batch) เอง (**client ไม่เคยส่ง key ของหน้า**), HEAD ทุกไฟล์ (มีจริง, ≤ 20 MB, `image/*`) แล้วค่อยเขียน DB + ลบ object ชุดเก่า
+- ลบตอนที่ยังไม่ปล่อย → ลบรูปใน R2 ด้วย; ตอน/เรื่องที่ปล่อยแล้ว (soft delete + refund) **ยังเก็บรูปไว้**
+- ไม่ได้ตั้ง `R2_*` → อัพโหลดได้ `storage_unavailable`, หน้าอ่าน/ปกแสดง placeholder (ไม่ crash)
+- ข้อจำกัดที่รู้อยู่: batch ที่อัพโหลดแล้วไม่กดบันทึก (ปิดหน้ากลางทาง/บันทึกไม่ผ่าน) ค้างใน bucket — ยังไม่มีงานเก็บกวาด
+
+### ตั้งค่า R2 (ครั้งแรก)
+
+1. Cloudflare Dashboard → R2 → สร้าง bucket `toon-universe-pages` (private) และ `toon-universe-public` → Settings → Public access: เปิด r2.dev subdomain (production: ผูก custom domain แทน) → URL ที่ได้ = `NEXT_PUBLIC_R2_PUBLIC_URL`
+2. R2 → Manage API tokens → สร้าง token สิทธิ์ **Object Read & Write** เฉพาะ 2 bucket นี้ → `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`; Account ID → `R2_ACCOUNT_ID`
+3. CORS (ทั้ง 2 bucket — ให้ browser PUT ได้; ใส่ origin production เพิ่มตอน deploy):
+   ```json
+   [{ "AllowedOrigins": ["http://localhost:3000"], "AllowedMethods": ["GET", "PUT"], "AllowedHeaders": ["content-type", "cache-control"], "MaxAgeSeconds": 3600 }]
+   ```
+4. ใส่ค่าใน `.env.local` ตาม `.env.example` แล้ว restart `npm run dev`
+
 ## Types & Env
 
 - Types: `npm run db:types` → `src/lib/supabase/database.types.ts` (รันใหม่ทุกครั้งที่แก้ schema)

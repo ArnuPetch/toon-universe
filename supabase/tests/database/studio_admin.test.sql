@@ -48,7 +48,7 @@ select is((select page_count from public.episodes where id = 8101), 2, 'page_cou
 -- Uploader writing pages through RLS also updates page_count (security definer trigger).
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000f1","role":"authenticated"}', true);
-select lives_ok($$insert into public.episode_pages (episode_id, page_number, storage_key) values (8102, 1, 'x')$$,
+select lives_ok($$insert into public.episode_pages (episode_id, page_number, storage_key) values (8102, 1, 'episodes/8001/8102/abcd1234/001.jpg')$$,
   'uploader adds a page');
 reset role;
 select is((select page_count from public.episodes where id = 8102), 1, 'page_count updated for an RLS write');

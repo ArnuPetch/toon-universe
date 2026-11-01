@@ -1,9 +1,9 @@
+import { coverUrl } from "@/lib/r2/shared";
 import type { CoverBadge } from "@/lib/server/home";
 import { CoinIcon } from "./icons";
 
-// Series cover. Until covers are served from R2, every cover is the design's
-// gradient placeholder with the title's first consonant.
-// TODO: render the R2 image when cover_key is set.
+// Series cover: the image from the public R2 bucket when the series has one,
+// else the design's gradient placeholder with the title's first consonant.
 
 const GRADIENTS = [
   "from-[#c04cfd] via-[#3b1e7a] via-70% to-[#0e0e14]",
@@ -27,13 +27,35 @@ export function Cover({
   className = "",
   initialClassName = "text-[20px] left-2.5 bottom-2.5",
   badge,
+  coverKey,
+  priority = false,
 }: {
   id: number;
   title: string;
+  coverKey?: string | null;
+  /** Above the fold (hero): load right away instead of lazily. */
+  priority?: boolean;
   className?: string;
   initialClassName?: string;
   badge?: CoverBadge;
 }) {
+  const src = coverUrl(coverKey);
+  if (src) {
+    return (
+      <div className={`relative overflow-hidden bg-surface-2 ${className}`}>
+        {/* eslint-disable-next-line @next/next/no-img-element -- resized webp from R2, immutable key */}
+        <img
+          src={src}
+          alt={`ปก ${title}`}
+          loading={priority ? "eager" : "lazy"}
+          fetchPriority={priority ? "high" : undefined}
+          decoding="async"
+          className="absolute inset-0 size-full object-cover"
+        />
+        {badge && <Badge badge={badge} />}
+      </div>
+    );
+  }
   return (
     <div
       className={`relative overflow-hidden bg-linear-to-b ${GRADIENTS[id % GRADIENTS.length]} ${className}`}

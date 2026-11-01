@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { cacheLife, cacheTag } from "next/cache";
 import type { Database } from "@/lib/supabase/database.types";
+import { pageUrls } from "@/lib/r2/server";
 import { createPublicClient } from "@/lib/supabase/public";
 import { createClient } from "@/lib/supabase/server";
 import { getUserId } from "./auth";
@@ -235,7 +236,8 @@ export async function getRecommendations(seriesId: number, limit = 10): Promise<
 
 // --- Reader ---
 
-export type ReaderPage = { number: number; storageKey: string; width: number | null; height: number | null };
+/** `url` = short-lived signed R2 URL (null → placeholder). */
+export type ReaderPage = { number: number; url: string | null; width: number | null; height: number | null };
 
 export type ReaderPreference = { mode: ReadingMode; direction: ReadingDirection };
 
@@ -251,7 +253,9 @@ export async function getEpisodePages(episodeId: number): Promise<ReaderPage[]> 
     console.error("[reader:pages]", error);
     return [];
   }
-  return data.map((p) => ({ number: p.page_number, storageKey: p.storage_key, width: p.width, height: p.height }));
+  // Signed only after RLS let these rows through.
+  const urls = await pageUrls(data.map((p) => p.storage_key));
+  return data.map((p, i) => ({ number: p.page_number, url: urls[i], width: p.width, height: p.height }));
 }
 
 /** The reader's saved mode/direction for this series, else the series default. */

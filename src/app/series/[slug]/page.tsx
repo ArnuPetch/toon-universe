@@ -106,6 +106,8 @@ function SeriesHeader({ series, viewer }: { series: SeriesDetail; viewer: Viewer
         <div className="flex gap-4 lg:contents">
           <Cover
             id={series.id}
+            coverKey={series.coverKey}
+            priority
             title={series.title}
             className="aspect-[3/4] w-[120px] shrink-0 rounded-xl lg:w-[260px] lg:rounded-2xl"
             initialClassName="text-[48px] left-3 bottom-3 lg:text-[120px] lg:left-5 lg:bottom-5"
@@ -280,7 +282,7 @@ function EpisodeRow({ series, episode, viewer }: { series: SeriesDetail; episode
       href={`/series/${series.slug}/${episode.number}`}
       className="flex h-[76px] items-center gap-3.5 rounded-xl bg-surface px-3 transition-colors hover:bg-surface-2"
     >
-      <Cover id={series.id} title={series.title} className="h-14 w-[42px] shrink-0 rounded-lg" initialClassName="text-[16px] left-1.5 bottom-1.5" />
+      <Cover id={series.id} coverKey={series.coverKey} title={series.title} className="h-14 w-[42px] shrink-0 rounded-lg" initialClassName="text-[16px] left-1.5 bottom-1.5" />
       <div className="flex min-w-0 flex-1 flex-col gap-0.5 leading-[1.4]">
         <p className="truncate text-[15px] font-semibold">
           ตอนที่ {episode.number}

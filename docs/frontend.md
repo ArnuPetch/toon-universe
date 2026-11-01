@@ -23,7 +23,7 @@
 - Component ที่ใช้หลายหน้าอยู่ `src/components/`: `TopBar` (`active` = href ของเมนูปัจจุบัน, `search={false}` ซ่อนช่องค้นหา), `BottomTabBar`, `Section`/`Rail`/`SectionSkeleton`, `page.tsx` (`PageMain` — main ตามขนาดหน้า Home, `narrow` สำหรับหน้าฟอร์ม/รายการ; `PageTitle`; `EmptyState`; `SignInPrompt`), `form-styles.ts` (class ของ input/ปุ่ม/กล่อง error), `legal.tsx`, `format.ts` (วิว, เวลา, วันที่, label สถานะ/เรต/ชั้น); ของเฉพาะหน้าอยู่ `src/components/<page>/`
 - หน้า browse: `browse/series-grid.tsx` (`SeriesGrid` ปก 3→8 คอลัมน์), `browse/link-tabs.tsx` (`LinkTabs` segmented, `ChipRow` chip กรอง — เป็นลิงก์ทั้งหมด ไม่ใช้ JS), `browse/filters.tsx` (URL ⇄ ตัวกรอง: `parseFilters`/`filterHref`/`BrowseFilters`), `browse/pagination.tsx`
 - ค่าคงที่ที่ server component ใช้ด้วย **ห้าม export จากไฟล์ `"use client"`** (server จะได้ client reference ไม่ใช่ค่า) → ใส่ `format.ts`
-- ปกเรื่อง: ตอนนี้เป็น placeholder (gradient + ตัวอักษรแรก ข้ามสระนำ เ แ โ ใ ไ) — `TODO` ใน `cover.tsx` เมื่อเสิร์ฟรูปจาก R2
+- ปกเรื่อง: `Cover` ส่ง `coverKey` เสมอ → รูปจาก public bucket (`coverUrl()` ใน `src/lib/r2/shared.ts`) ไม่มีปก/ไม่ได้ตั้ง `NEXT_PUBLIC_R2_PUBLIC_URL` → placeholder (gradient + ตัวอักษรแรก ข้ามสระนำ เ แ โ ใ ไ); ปกบนสุดของหน้าใส่ `priority`
 - เป็น Server Component เป็นค่าเริ่มต้น; `"use client"` เฉพาะส่วนที่มี state/interaction (carousel, tabs) และส่ง ReactNode ที่ render บน server เข้าไปแทนการส่งข้อมูลดิบ (ดู `RankingSection`)
 
 ## Data & caching (Next.js `cacheComponents`)
@@ -66,7 +66,7 @@
 - สถิติ (วิว/ผู้ติดตาม/คะแนนทั้งหมด) จาก RPC `get_series_stats` (MV, ช้าได้ ≤ 10 นาที); เรตอายุจาก RPC `viewer_meets_age_rating` — series RLS ไม่กรองอายุ จึงต้องแสดง `AgeGate` แทนปุ่มอ่าน/หน้า (RLS ของ `episode_pages` กันซ้ำอีกชั้น)
 - หน้าอ่าน: อ่านได้ = เจ้าของ / ฟรี / unlock ยังไม่หมดอายุ → ดึงหน้า + `recordEpisodeView`; ไม่งั้นแสดง `UnlockPanel` (Server Action `unlockEpisodeAction` → RPC → `router.refresh()`; coin ไม่พอ → ลิงก์ `/coins`)
 - `Reader` (client): โหมดเลื่อนลง/พลิกหน้า + ซ้าย→ขวา/ขวา→ซ้าย (ปุ่มลูกศร, คลิกครึ่งซ้าย/ขวา), จำค่าต่อเรื่อง (`saveReadingPreference`), บันทึก progress แบบ debounce (`saveReadingProgress` — ย้ายเรื่องเข้าชั้น "กำลังอ่าน" ด้วยถ้ายังไม่อยู่หรืออยู่ "อยากอ่าน")
-- รูปหน้า/ปกยังเป็น placeholder ตาม width/height — รอ R2 + signed URL
+- รูปหน้า: `getEpisodePages` sign URL ให้**หลัง** RLS ผ่านแล้วเท่านั้น (`pageUrls()` — อายุ ≥ 2 ชม., เวลา sign ปัดลงเป็นชั่วโมงให้ URL เดิมใช้ cache เบราว์เซอร์ได้) → `<img>` กล่องตามสัดส่วน width/height, lazy ยกเว้น ±2 หน้ารอบหน้าที่เปิด, โหมดพลิกหน้า preload 2 หน้าถัดไป; รูปโหลดไม่ได้ (URL หมดอายุ) → `router.refresh()` ไม่เกินนาทีละครั้ง; `storage_key` ที่ไม่ขึ้นต้น `episodes/` (ข้อมูลเก่า `pending/…`) → placeholder
 - รายชื่อตอน: ล่าสุดก่อน (สลับได้), แสดง 30 ตอนแรกแล้วกด "ดูทั้งหมด", แยกตาม season ถ้ามี
 
 ## คอมเมนต์ + รีวิว
@@ -106,8 +106,9 @@
 - หน้า: `/studio` (สรุป + รายการเรื่อง), `/studio/series/new`, `/studio/series/[id]` (สถานะ/เผยแพร่, สถิติ, ตอน, ข้อมูลเรื่อง, season, ลบ — ลบต้องพิมพ์ชื่อเรื่อง), `/studio/series/[id]/episodes/new|[episodeId]` (`EpisodeEditor`), `/studio/earnings`
 - เรื่องใหม่เป็นฉบับร่างเสมอ; slug เว้นว่าง → สร้างจากชื่ออังกฤษหรือ `series-xxxxxx`; แนว 1–5
 - ตอน: ฉบับร่าง / เผยแพร่ทันที / ตั้งเวลา (`datetime-local` = เวลาไทย); ต้องมีหน้าก่อนเผยแพร่ (`episode_has_no_pages`); ตอนที่ปล่อยแล้วไม่ส่ง `publish_at` อีก
-- อัพโหลดหน้า (`components/studio/page-uploader.tsx`): หลายไฟล์/ลากวาง, เรียงชื่อไฟล์แบบ numeric, สลับ/ลบ, อ่านขนาดรูปในเบราว์เซอร์ → `saveEpisodePages` แทนที่ทั้งตอน — **ยังไม่อัพโหลดรูปจริง** (storage_key `pending/...`) และยังไม่รองรับ .zip → ทำตอนเชื่อม R2 (`TODO(R2)`)
-- ยังไม่มี: อัพโหลดปก (รอ R2), กราฟสถิติรายวัน, watermark
+- อัพโหลดหน้า (`components/studio/page-uploader.tsx`): หลายไฟล์/.zip (แตกในเบราว์เซอร์ด้วย `fflate`, ข้าม `__MACOSX/` และไฟล์ซ่อน)/ลากวาง, เรียงชื่อไฟล์แบบ numeric, สลับ/ลบ, อ่านขนาดรูปในเบราว์เซอร์ → `prepareEpisodePagesUpload` → PUT ตรงเข้า R2 ทีละ 4 ไฟล์ (`r2-upload.ts`, ลองซ้ำ 1 ครั้ง, แถบความคืบหน้า, เตือนก่อนปิดหน้า) → `saveEpisodePages` แทนที่ทั้งตอน; หน้าที่บันทึกแล้วแสดง thumbnail (signed URL)
+- ปก (`components/studio/cover-uploader.tsx`, หน้า `/studio/series/[id]`): ย่อเป็น ≤720×960 WebP (JPEG ถ้าเบราว์เซอร์ encode WebP ไม่ได้) → `prepareCoverUpload` → PUT → `saveSeriesCover` (ลบได้ด้วย `null`)
+- ยังไม่มี: กราฟสถิติรายวัน, watermark
 
 ## Admin `/admin`
 

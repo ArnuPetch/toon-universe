@@ -25,6 +25,7 @@ import {
   StatTile,
   VISIBILITY_TONE,
 } from "@/components/studio/bits";
+import { CoverUploader } from "@/components/studio/cover-uploader";
 import { DeleteSeriesButton, PublishToggle, SeasonManager } from "@/components/studio/series-controls";
 import { SeriesForm } from "@/components/studio/series-form";
 import { TopBar } from "@/components/top-bar";
@@ -76,7 +77,7 @@ async function SeriesContent({ id: idPromise }: { id: Promise<string> }) {
         <Crumbs items={[{ href: "/studio", label: "สตูดิโอ" }, { label: s.title }]} />
         <section aria-label="ข้อมูลเรื่อง" className={`${CARD} flex flex-col gap-5 lg:flex-row lg:items-center`}>
           <div className="flex min-w-0 flex-1 gap-4 lg:gap-5">
-            <Cover id={s.id} title={s.title} className="aspect-[3/4] w-[88px] shrink-0 rounded-xl lg:w-[112px]" />
+            <Cover id={s.id} coverKey={s.coverKey} title={s.title} className="aspect-[3/4] w-[88px] shrink-0 rounded-xl lg:w-[112px]" />
             <div className="flex min-w-0 flex-col gap-2">
               <div className="flex flex-wrap gap-1.5">
                 <Pill tone={VISIBILITY_TONE[s.visibility]}>{VISIBILITY_LABEL[s.visibility]}</Pill>
@@ -164,6 +165,11 @@ async function SeriesContent({ id: idPromise }: { id: Promise<string> }) {
           </div>
         </Section>
         <div className="flex flex-col gap-8 lg:gap-10">
+          <Section title="ปก">
+            <div className={CARD}>
+              <CoverUploader seriesId={s.id} title={s.title} coverKey={s.coverKey} />
+            </div>
+          </Section>
           <Section title="Season">
             <div className={CARD}>
               <SeasonManager

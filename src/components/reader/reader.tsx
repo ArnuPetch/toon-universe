@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { saveReadingPreference, saveReadingProgress } from "@/app/actions/reader";
 import type { ReaderPage, ReaderPreference } from "@/lib/server/series";
@@ -157,25 +158,52 @@ function Choice<T extends string>({
 }
 
 /**
- * One page image. Pages live in R2 and will be served through short-lived
- * signed URLs; until R2 is wired up this renders a sized placeholder.
- * TODO: <img src={signedUrl}> once episode pages are served from R2.
+ * One page image from a short-lived signed R2 URL (null → sized placeholder,
+ * e.g. pages saved before R2). The box keeps the page's aspect ratio so the
+ * layout doesn't jump while images load. If a URL has expired (reader left
+ * open for hours) the first failing image refreshes the page once for new URLs.
  */
-function PageImage({ page, className = "" }: { page: ReaderPage; className?: string }) {
+function PageImage({ page, eager = false, className = "" }: { page: ReaderPage; eager?: boolean; className?: string }) {
+  const router = useRouter();
   const ratio = page.width && page.height ? `${page.width} / ${page.height}` : "800 / 1200";
+  if (!page.url) {
+    return (
+      <div
+        role="img"
+        aria-label={`หน้า ${page.number}`}
+        style={{ aspectRatio: ratio }}
+        className={`grid w-full place-items-center bg-linear-to-b from-surface to-surface-2 ${className}`}
+      >
+        <span aria-hidden="true" className="text-[40px] font-bold text-white/15 lg:text-[64px]">
+          {page.number}
+        </span>
+      </div>
+    );
+  }
   return (
-    <div
-      role="img"
-      aria-label={`หน้า ${page.number}`}
+    // eslint-disable-next-line @next/next/no-img-element -- signed R2 URL, already sized by the uploader
+    <img
+      src={page.url}
+      alt={`หน้า ${page.number}`}
+      width={page.width ?? undefined}
+      height={page.height ?? undefined}
       style={{ aspectRatio: ratio }}
-      className={`grid w-full place-items-center bg-linear-to-b from-surface to-surface-2 ${className}`}
-    >
-      <span aria-hidden="true" className="text-[40px] font-bold text-white/15 lg:text-[64px]">
-        {page.number}
-      </span>
-    </div>
+      loading={eager ? "eager" : "lazy"}
+      decoding="async"
+      draggable={false}
+      onContextMenu={(e) => e.preventDefault()}
+      onError={() => {
+        // At most once a minute, so a truly missing image can't loop refreshes.
+        if (Date.now() - lastUrlRefresh < 60_000) return;
+        lastUrlRefresh = Date.now();
+        router.refresh();
+      }}
+      className={`block h-auto w-full select-none bg-surface ${className}`}
+    />
   );
 }
+
+let lastUrlRefresh = 0;
 
 function VerticalPages({
   pages,
@@ -218,7 +246,7 @@ function VerticalPages({
             refs.current[i] = el;
           }}
         >
-          <PageImage page={p} />
+          <PageImage page={p} eager={Math.abs(p.number - startPage) <= 2} />
         </div>
       ))}
     </div>
@@ -255,6 +283,13 @@ function PagedPages({
     return () => window.removeEventListener("keydown", onKey);
   }, [left, right]);
 
+  // Warm the cache for the next two pages so flipping is instant.
+  useEffect(() => {
+    for (const p of pages.slice(page, page + 2)) {
+      if (p.url) new Image().src = p.url;
+    }
+  }, [pages, page]);
+
   const current = pages[page - 1];
   const navBtn =
     "grid size-11 place-items-center rounded-full bg-surface text-text-2 transition-colors hover:text-text disabled:opacity-30";
@@ -264,7 +299,7 @@ function PagedPages({
   return (
     <div className="flex flex-col items-center gap-4 px-4 pt-4">
       <div className="relative w-full max-w-[min(800px,calc((100dvh-180px)*2/3))]">
-        {current && <PageImage key={current.number} page={current} className="animate-[fade_200ms_ease-out]" />}
+        {current && <PageImage key={current.number} page={current} eager className="animate-[fade_200ms_ease-out]" />}
         {/* Tap zones: left / right half of the page */}
         <button type="button" tabIndex={-1} aria-hidden="true" onClick={left} className="absolute inset-y-0 left-0 w-1/2 cursor-w-resize" />
         <button type="button" tabIndex={-1} aria-hidden="true" onClick={right} className="absolute inset-y-0 right-0 w-1/2 cursor-e-resize" />

@@ -66,14 +66,20 @@ export async function EpisodeEditor({ seriesId, episodeId }: { seriesId: number;
             {d.pages.length > 0 && (
               <div className="flex flex-col gap-2">
                 <p className="text-sm leading-[1.4] text-text-2">หน้าที่บันทึกไว้</p>
-                <ol className="flex flex-wrap gap-1.5">
+                <ol className="grid grid-cols-6 gap-1.5 sm:grid-cols-8 lg:grid-cols-10">
                   {d.pages.map((p) => (
                     <li
                       key={p.id}
-                      title={`${p.width ?? "?"}×${p.height ?? "?"}`}
-                      className="grid h-10 w-8 place-items-center rounded-md bg-surface-2 text-[11px] text-muted"
+                      title={`หน้า ${p.pageNumber} · ${p.width ?? "?"}×${p.height ?? "?"}`}
+                      className="relative grid aspect-[3/4] place-items-center overflow-hidden rounded-md bg-surface-2 text-[11px] text-muted"
                     >
-                      {p.pageNumber}
+                      {p.url && (
+                        // eslint-disable-next-line @next/next/no-img-element -- signed R2 URL
+                        <img src={p.url} alt="" loading="lazy" decoding="async" className="absolute inset-0 size-full object-cover object-top" />
+                      )}
+                      <span className="absolute left-1 top-1 rounded bg-black/70 px-1 text-[10px] font-bold leading-[1.4] text-white">
+                        {p.pageNumber}
+                      </span>
                     </li>
                   ))}
                 </ol>

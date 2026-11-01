@@ -35,6 +35,7 @@ function BrowseCard({ item, now, show }: { item: BrowseItem; now: number; show: 
     <Link href={href} className="group flex min-w-0 flex-col gap-2">
       <Cover
         id={item.id}
+        coverKey={item.coverKey}
         title={item.title}
         badge={item.badge}
         className="aspect-[3/4] w-full rounded-xl transition-transform group-hover:-translate-y-0.5"
