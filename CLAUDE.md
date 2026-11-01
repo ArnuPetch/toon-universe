@@ -27,7 +27,7 @@ TypeScript · Next.js · Supabase · Cloudflare R2 · Vercel Hobby (dev) → Clo
 
 ## สถานะปัจจุบัน (อัพเดต 2026-11-01)
 
-**ขั้นตอน: เชื่อม Next.js กับ Supabase เสร็จแล้ว (client/proxy/RPC wrapper) → ถัดไปคือ Stripe PromptPay checkout + webhook**
+**ขั้นตอน: Stripe PromptPay checkout + webhook ต้นแบบเสร็จแล้ว (ยังไม่ได้ทดสอบกับ Stripe sandbox จริง) → ถัดไปคือทดสอบกับ sandbox แล้วทำ Cron**
 
 เสร็จแล้ว (รายละเอียดใน docs):
 
@@ -35,18 +35,20 @@ TypeScript · Next.js · Supabase · Cloudflare R2 · Vercel Hobby (dev) → Clo
 - Schema + RLS + triggers (`supabase/migrations/`) — [docs/database.md](docs/database.md)
 - Server-side functions (RPC): unlock, donate, remove + refund, withdrawal, sanction, content hold พร้อม pgTAP tests — [docs/database.md](docs/database.md)
 - เชื่อม Next.js กับ Supabase (`src/lib/`): clients, proxy, auth, RPC wrapper, error mapping, ban sync — [docs/server-integration.md](docs/server-integration.md)
+- Stripe Checkout (PromptPay) + webhook → `coin_purchases` / `coin_wallets` / `coin_ledger` — [docs/server-integration.md](docs/server-integration.md#stripe-checkout-promptpay)
 
 กฎสำคัญ (ห้ามพลาด):
 
 - **Client อ่านข้อมูลการเงินได้เฉพาะของตัวเอง เขียนไม่ได้** — งานการเงิน/admin ทำฝั่ง server ด้วย `service_role` ผ่าน RPC
 - **id ผู้ใช้/admin ต้องเอาจาก session ที่ verify แล้ว (`getClaims()`) ห้ามรับจาก request body**
+- **เติม coin เฉพาะใน Stripe webhook** (verify signature แล้ว) ห้ามเติมจากหน้า success
 - เพิ่ม error code ใหม่ใน SQL ต้องเพิ่มใน `src/lib/server/errors.ts` ด้วย
 - แก้ schema แล้วรัน `npm run db:types` ใหม่ทุกครั้ง
 - Push migration ไปที่ branch `dev` → Supabase GitHub integration apply ให้เอง
 
 ยังไม่ได้ทำ (เรียงตามลำดับที่ควรทำ):
 
-1. Stripe PromptPay checkout + webhook → `coin_purchases` / `coin_wallets` / `coin_ledger`
+1. ทดสอบ Stripe กับ sandbox จริง (`stripe listen`) + ตั้ง Dashboard ให้เปิดแค่ PromptPay
 2. Cron: ตัด welcome coin ที่หมดอายุ, ปลด suspend ที่ครบ `ends_at` (`private.refresh_user_status`), ส่ง notification ตอนใหม่ที่ตั้งเวลาไว้
 3. Ranking / recommendation (materialized views)
 4. หน้าเว็บ Reader / Uploader / Admin

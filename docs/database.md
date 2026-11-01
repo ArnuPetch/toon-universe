@@ -10,6 +10,7 @@
 |---|---|
 | `20261101081833_init_schema.sql` | Schema ต้นแบบ, RLS, triggers, helper functions |
 | `20261101085756_server_functions.sql` | Server-side functions (RPC) |
+| `20261101120000_coin_checkout.sql` | เติม coin ผ่าน Stripe Checkout (PromptPay) |
 
 ## Schema ต้นแบบ (`init_schema`)
 
@@ -41,6 +42,7 @@
 | ถอนเงิน | `request_withdrawal` → `review_withdrawal` (approve/reject) → `mark_withdrawal_paid` |
 | Sanction | `suspend_user`, `ban_user`, `lift_sanction` |
 | ปิดตรวจ | `start_content_hold`, `end_content_hold` (ชดเชยเวลาตอนปิด hold) |
+| เติม coin | `create_coin_purchase`, `attach_checkout_session`, `complete_coin_purchase`, `fail_coin_purchase` (ดู [server-integration.md](server-integration.md#stripe-checkout-promptpay)) |
 
 ### การตัดสินใจที่เลือกไว้
 
@@ -48,6 +50,12 @@
 - Ban uploader → ซ่อนทุกเรื่อง (`moderation_status = 'removed'`), คืน coin เฉพาะรายได้ที่ยังถอนไม่ได้, รายได้ที่เหลือ + คำขอถอนที่ค้างถูกยึด
 - รายได้จากเรื่องที่กำลังปิดตรวจถอนไม่ได้จนกว่าจะเปิด
 - ปลด ban ไม่คืน coin/เรื่องที่ถูกยึด
+- เติม coin:
+  - `complete_coin_purchase` idempotent (webhook ซ้ำไม่เติมซ้ำ) และชนะสถานะ failed/canceled ที่มาก่อน (เงินเข้าแล้ว)
+  - `fail_coin_purchase` แก้ได้เฉพาะ `pending` — ไม่ downgrade รายการที่สำเร็จแล้ว
+  - หา purchase ด้วย id (`client_reference_id`) ไม่ใช่ session id — webhook มาก่อน attach ก็ยังเจอ; ถ้า attach แล้ว session id ต้องตรง
+  - ตรวจยอด + สกุลเงิน (`thb`) กับราคา snapshot ทุกครั้ง
+  - จ่ายสำเร็จหลังโดน ban → บันทึกการจ่าย + เติม แล้วยึดทันที (`ban_forfeit`) ให้ wallet ของคนโดน ban เป็น 0 เสมอ
 
 ### Schema ที่เพิ่มใน migration นี้
 
@@ -57,5 +65,5 @@
 
 ## Tests
 
-- pgTAP: `supabase/tests/database/server_functions.test.sql` — ผ่าน 51/51, ผ่าน `supabase db advisors`
+- pgTAP: `supabase/tests/database/server_functions.test.sql`, `coin_checkout.test.sql` — ผ่าน 78/78, ผ่าน `supabase db advisors`
 - รัน: `npx supabase test db`

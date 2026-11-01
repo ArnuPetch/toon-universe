@@ -769,14 +769,26 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "ban_user":
+            "attach_checkout_session":
+{ Args: { "p_purchase_id": number,"p_session_id": string,"p_user_id": string }; Returns: undefined
+                           },
+"ban_user":
 { Args: { "p_admin_id": string,"p_reason": string,"p_user_id": string }; Returns: Json
+                           },
+"complete_coin_purchase":
+{ Args: { "p_amount_satang": number,"p_currency": string,"p_payment_intent_id": string,"p_purchase_id": number,"p_session_id": string }; Returns: Json
+                           },
+"create_coin_purchase":
+{ Args: { "p_pack_id": number,"p_user_id": string }; Returns: Json
                            },
 "donate":
 { Args: { "p_amount": number,"p_from_user_id": string,"p_message"?: string,"p_series_id"?: number,"p_to_user_id": string }; Returns: Json
                            },
 "end_content_hold":
 { Args: { "p_admin_id": string,"p_series_id": number }; Returns: Json
+                           },
+"fail_coin_purchase":
+{ Args: { "p_purchase_id": number,"p_session_id": string,"p_status": Database["public"]['Enums']["payment_status"] }; Returns: Json
                            },
 "lift_sanction":
 { Args: { "p_admin_id": string,"p_sanction_id": number }; Returns: Json

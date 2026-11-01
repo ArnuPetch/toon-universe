@@ -16,7 +16,7 @@ import { AppError, type ActionResult, fail, isErrorCode } from "./errors";
 type Functions = Database["public"]["Functions"];
 type FnName = keyof Functions;
 
-async function callRpc<T>(fn: FnName, args: Functions[FnName]["Args"]): Promise<ActionResult<T>> {
+export async function callRpc<T>(fn: FnName, args: Functions[FnName]["Args"]): Promise<ActionResult<T>> {
   const supabase = createAdminClient();
   // `args` is checked per wrapper below; supabase-js can't narrow a union key.
   const { data, error } = await supabase.rpc(fn, args as never);
@@ -35,7 +35,7 @@ function mapPostgrestError(fn: string, error: PostgrestError): ActionResult<neve
 }
 
 /** Run an auth guard + action, converting AppError into an ActionResult. */
-async function guarded<T>(run: () => Promise<ActionResult<T>>): Promise<ActionResult<T>> {
+export async function guarded<T>(run: () => Promise<ActionResult<T>>): Promise<ActionResult<T>> {
   try {
     return await run();
   } catch (e) {

@@ -1,10 +1,11 @@
 // Error codes raised by the Postgres RPCs (SQLSTATE P0001, message = code)
 // plus a few app-level codes. Keep in sync with
-// supabase/migrations/*_server_functions.sql.
+// supabase/migrations/*_server_functions.sql and *_coin_checkout.sql.
 export const ERROR_MESSAGES = {
   // App level
   not_authenticated: "กรุณาเข้าสู่ระบบก่อน",
   unexpected_error: "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง",
+  payment_unavailable: "ระบบชำระเงินขัดข้องชั่วคราว กรุณาลองใหม่อีกครั้ง",
 
   // Account
   user_not_found: "ไม่พบผู้ใช้",
@@ -22,6 +23,13 @@ export const ERROR_MESSAGES = {
   cannot_donate_to_self: "ไม่สามารถสนับสนุนตัวเองได้",
   recipient_not_available: "ผู้รับไม่สามารถรับการสนับสนุนได้ในขณะนี้",
   series_not_available: "เรื่องนี้ไม่เปิดให้บริการในขณะนี้",
+
+  // Coin pack checkout (*_coin_checkout.sql)
+  coin_pack_not_found: "ไม่พบแพ็ก coin นี้",
+  purchase_not_found: "ไม่พบรายการเติม coin",
+  purchase_session_mismatch: "รายการชำระเงินไม่ตรงกับรายการเติม coin",
+  purchase_amount_mismatch: "ยอดชำระไม่ตรงกับราคาแพ็ก",
+  invalid_purchase_status: "สถานะรายการเติม coin ไม่ถูกต้อง",
 
   // Content removal
   series_not_found: "ไม่พบเรื่องนี้",
