@@ -27,7 +27,7 @@ TypeScript · Next.js · Supabase · Cloudflare R2 · Vercel Hobby (dev) → Clo
 
 ## สถานะปัจจุบัน (อัพเดต 2026-11-01)
 
-**ขั้นตอน: Stripe PromptPay checkout + webhook ต้นแบบเสร็จแล้ว (ยังไม่ได้ทดสอบกับ Stripe sandbox จริง) → ถัดไปคือทดสอบกับ sandbox แล้วทำ Cron**
+**ขั้นตอน: Stripe PromptPay checkout + webhook ต้นแบบเสร็จแล้ว, ตั้ง sandbox แล้ว → ถัดไปคือทำหน้าทดสอบ `/dev/coins` แล้วลองซื้อด้วย PromptPay จริงใน sandbox**
 
 เสร็จแล้ว (รายละเอียดใน docs):
 
@@ -48,9 +48,17 @@ TypeScript · Next.js · Supabase · Cloudflare R2 · Vercel Hobby (dev) → Clo
 
 ยังไม่ได้ทำ (เรียงตามลำดับที่ควรทำ):
 
-1. ทดสอบ Stripe กับ sandbox จริง (`stripe listen`) + ตั้ง Dashboard ให้เปิดแค่ PromptPay
+1. ทดสอบ Stripe กับ sandbox จริง — ดู [Stripe sandbox](#stripe-sandbox) ด้านล่าง
 2. Cron: ตัด welcome coin ที่หมดอายุ, ปลด suspend ที่ครบ `ends_at` (`private.refresh_user_status`), ส่ง notification ตอนใหม่ที่ตั้งเวลาไว้
 3. Ranking / recommendation (materialized views)
 4. หน้าเว็บ Reader / Uploader / Admin
 
 Local dev: `npx supabase start` (Studio: http://127.0.0.1:54323), `npx supabase db reset --local` เพื่อ apply migration ใหม่, `npx supabase test db` เพื่อรัน pgTAP tests
+
+### Stripe sandbox
+
+- Sandbox "Toon Universe sandbox" (บัญชีไทย) สร้างแล้ว, Stripe CLI login แล้ว, Dashboard เปิดแค่ PromptPay
+- รัน 3 terminal แยกกัน: `npx supabase start` / `npm run dev` / `stripe listen --forward-to localhost:3000/api/stripe/webhook --events checkout.session.completed,checkout.session.async_payment_succeeded,checkout.session.async_payment_failed,checkout.session.expired` (`whsec_…` ที่ได้ → `STRIPE_WEBHOOK_SECRET` ใน `.env.local` แล้ว restart dev)
+- `stripe trigger checkout.session.completed` ใช้ไม่ได้ตอนเปิดแค่ PromptPay: fixture ใช้ USD + จ่ายด้วยบัตร (`--override price:currency=thb` แก้ได้แค่เรื่องสกุลเงิน) → ต้องเปิด Cards ชั่วคราวแล้วปิดคืน หรือข้ามไปทดสอบผ่านหน้าทดสอบเลย
+- event จาก `stripe trigger` ไม่มี `client_reference_id` ของเรา → webhook ตอบ 200 แต่ไม่เติม coin (ตั้งใจ)
+- ยังไม่มีหน้า login/ซื้อ coin → ทดสอบซื้อจริงต้องมีหน้าทดสอบ `/dev/coins` (dev only) ก่อน
