@@ -53,6 +53,7 @@
 - `/` Home — ต้นแบบของทุกหน้า
 - `/login`
 - `/series/[slug]`, `/series/[slug]/[number]` (ดูด้านล่าง)
+- `/coins` (ดูด้านล่าง)
 
 ## หน้าเรื่อง / หน้าอ่าน
 
@@ -63,9 +64,15 @@
 - รูปหน้า/ปกยังเป็น placeholder ตาม width/height — รอ R2 + signed URL
 - รายชื่อตอน: ล่าสุดก่อน (สลับได้), แสดง 30 ตอนแรกแล้วกด "ดูทั้งหมด", แยกตาม season ถ้ามี
 
+## หน้าเติม coin (`/coins`)
+
+- ข้อมูล: `src/lib/server/coins.ts` — `getCoinPacks()` (cache, คำนวณราคา/coin + ส่วนประหยัดเทียบแพ็กที่แพงสุดต่อ coin), `getWallet()` (welcome coin หมดอายุ = 0), `getCoinHistory()` (`coin_ledger` 20 รายการล่าสุด), `getPurchaseBySession()` — ส่วนตัวไม่ cache
+- ซื้อ: `PackList` (client) → Server Action `buyCoinPackAction` (`src/app/actions/coins.ts`) → `startCoinCheckout` → `window.location.assign(checkoutUrl)`; ไม่ login → แสดงราคา + ปุ่ม "เข้าสู่ระบบเพื่อเติม coin" (`/login?next=/coins`)
+- กลับจาก Stripe: `?checkout=success&session_id=…` → banner ตามสถานะ purchase (`succeeded` / `pending` = `RefreshWhilePending` เรียก `router.refresh()` ทุก 3 วิ ≤ 1 นาที / อื่นๆ = ไม่สำเร็จ); `?checkout=canceled` → banner ยกเลิก — **หน้านี้แค่แสดงสถานะ ไม่เติม coin**
+
 ## Routes ที่ลิงก์ไว้แล้วแต่ยังไม่มีหน้า
 
-`/search?q=`, `/ranking` (`?kind=trending`), `/genres`, `/bookshelf`, `/profile`, `/notifications`, `/coins`, `/updates`, `/terms`, `/privacy` (ลิงก์จากหน้าสมัคร), `/genres/[slug]` (ลิงก์จากแนวในหน้าเรื่อง)
+`/search?q=`, `/ranking` (`?kind=trending`), `/genres`, `/bookshelf`, `/profile`, `/notifications`, `/updates`, `/terms`, `/privacy` (ลิงก์จากหน้าสมัคร), `/genres/[slug]` (ลิงก์จากแนวในหน้าเรื่อง)
 
 ## ตรวจงานก่อนส่ง
 

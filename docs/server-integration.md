@@ -81,4 +81,4 @@
 ทดสอบ e2e กับ local แล้ว: login ผ่าน cookie, cookie ปลอม → null, error mapping, ban → login ไม่ได้, lift → login ได้
 
 Stripe webhook (event ที่ sign เองกับ local dev server): signature ผิด → 400, unpaid → ไม่เติม, ยอดไม่ตรง → ปฏิเสธ + log, paid → เติม 1 ครั้ง, event ซ้ำ → ไม่เติมซ้ำ, expired หลังจ่ายแล้ว → ไม่ downgrade
-- ยังไม่ได้ทดสอบกับ Stripe sandbox จริง (ยังไม่มี key) — `startCoinCheckout` ยังไม่เคยเรียก API จริง
+Stripe sandbox จริง (2026-11-01, ผ่านหน้า `/coins`): Checkout แสดงเฉพาะ PromptPay, THB, ภาษาไทย, email ผู้ใช้ → authorize test payment → `checkout.session.completed` (paid) → webhook 200 → purchase `succeeded` + wallet +coin + ledger `purchase`; QR หมดอายุ → session ยังเปิด purchase ยัง `pending`; กดย้อนกลับ → `/coins?checkout=canceled`
