@@ -25,7 +25,7 @@ TypeScript · Next.js · Supabase · Cloudflare R2 · Vercel Hobby (dev) → Clo
 
 ## สถานะปัจจุบัน (อัพเดต 2026-11-01)
 
-**ขั้นตอน: Database schema + server-side functions (Postgres RPC) ต้นแบบเสร็จแล้ว → ถัดไปคือเชื่อม Next.js กับ Supabase (เรียก RPC ฝั่ง server)**
+**ขั้นตอน: เชื่อม Next.js กับ Supabase เสร็จแล้ว (client/proxy/RPC wrapper) → ถัดไปคือ Stripe PromptPay checkout + webhook**
 
 เสร็จแล้ว:
 
@@ -56,12 +56,22 @@ TypeScript · Next.js · Supabase · Cloudflare R2 · Vercel Hobby (dev) → Clo
   - Schema ที่เพิ่ม: `episodes.deleted_at`, ห้ามเลื่อน `publish_at` ของตอนที่ปล่อยแล้ว, open content hold ได้ 1 อันต่อเรื่อง
   - Tests (pgTAP): `supabase/tests/database/server_functions.test.sql` — ผ่าน 51/51, ผ่าน `supabase db advisors`
 
+- เชื่อม Next.js กับ Supabase (`src/lib/`):
+  - `supabase/client.ts` (browser), `supabase/server.ts` (Server Components/Actions, ใช้ session ผู้ใช้ → RLS), `supabase/admin.ts` (`service_role`, `server-only`, env `SUPABASE_SECRET_KEY` ห้าม `NEXT_PUBLIC_`)
+  - `src/proxy.ts` (Next 16 เปลี่ยน middleware → proxy) refresh token ด้วย `getClaims()` — เป็นที่เดียวที่ refresh
+  - `server/auth.ts`: `getClaims` (cache ต่อ request), `requireUserId`, `requireAdminId` (`app_metadata.role`)
+  - `server/rpc.ts`: wrapper ทุก RPC — **ดึง id จาก session เอง ไม่รับจาก caller**; คืน `ActionResult` (`{ok,data}` / `{ok:false,code,message}`) ไม่ throw
+  - `server/errors.ts`: map error code → ข้อความภาษาไทย (เพิ่ม code ใหม่ใน SQL ต้องเพิ่มที่นี่ด้วย; code ที่ไม่รู้จัก → `unexpected_error` + log)
+  - `banUser`: เรียก RPC ก่อน แล้วค่อย Auth ban (`ban_duration`); ถ้า Auth ban ล้มเหลวคืน `session_revoked: false` → เรียก `syncAuthBan` ซ้ำ; `liftSanction` ปลด Auth ban เมื่อ status ไม่ใช่ banned
+  - Types: `npm run db:types` → `src/lib/supabase/database.types.ts` (รันใหม่ทุกครั้งที่แก้ schema)
+  - Env: ดู `.env.example`
+  - ทดสอบ e2e กับ local แล้ว (login ผ่าน cookie, cookie ปลอม → null, error mapping, ban → login ไม่ได้, lift → login ได้)
+
 ยังไม่ได้ทำ (เรียงตามลำดับที่ควรทำ):
 
-1. เชื่อม Next.js กับ Supabase: service-role client (server only, ห้าม `NEXT_PUBLIC_`), wrapper เรียก RPC + map error code; `ban_user` ต้องเรียก `auth.admin.updateUserById(id, { ban_duration })` เพิ่มเพื่อตัด session
-2. Stripe PromptPay checkout + webhook → `coin_purchases` / `coin_wallets` / `coin_ledger`
-3. Cron: ตัด welcome coin ที่หมดอายุ, ปลด suspend ที่ครบ `ends_at` (`private.refresh_user_status`), ส่ง notification ตอนใหม่ที่ตั้งเวลาไว้
-4. Ranking / recommendation (materialized views)
-5. หน้าเว็บ Reader / Uploader / Admin
+1. Stripe PromptPay checkout + webhook → `coin_purchases` / `coin_wallets` / `coin_ledger`
+2. Cron: ตัด welcome coin ที่หมดอายุ, ปลด suspend ที่ครบ `ends_at` (`private.refresh_user_status`), ส่ง notification ตอนใหม่ที่ตั้งเวลาไว้
+3. Ranking / recommendation (materialized views)
+4. หน้าเว็บ Reader / Uploader / Admin
 
 Local dev: `npx supabase start` (Studio: http://127.0.0.1:54323), `npx supabase db reset --local` เพื่อ apply migration ใหม่, `npx supabase test db` เพื่อรัน pgTAP tests
