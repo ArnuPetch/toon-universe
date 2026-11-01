@@ -61,6 +61,10 @@ TypeScript · Next.js · Supabase · Cloudflare R2 · Vercel Hobby (dev) → Clo
 3. หน้าอื่นของ Reader ที่ Home ลิงก์ไว้: `/search`, `/ranking`, `/genres`, `/bookshelf`, `/notifications`, `/profile` (ปุ่มออกจากระบบ → `signOut`, กรอกวันเกิด), `/updates`, `/terms`, `/privacy`, ลืมรหัสผ่าน
 4. หน้า Uploader / Admin
 
+ฟีเจอร์ที่จะทำทีหลัง (ยังไม่ต้องทำตอนนี้):
+
+- **OAuth2 (เข้าสู่ระบบด้วย Google)** — ตอนนี้มีแค่ปุ่ม disabled "(เร็วๆ นี้)" ใน `src/components/auth/auth-form.tsx`; ตอนทำ: เปิด provider ใน Supabase Auth, `signInWithOAuth` + callback route แลก code เป็น session, ตรวจว่า welcome coin / เรตอายุ (วันเกิด) / ban ทำงานกับบัญชี OAuth ด้วย
+
 Local dev: `npx supabase start` (Studio: http://127.0.0.1:54323), `npx supabase db reset --local` เพื่อ apply migration ใหม่, `npx supabase test db` เพื่อรัน pgTAP tests
 
 ### Stripe sandbox

@@ -56,6 +56,9 @@ export async function signUp(_prev: AuthFormState, formData: FormData): Promise<
   if (!EMAIL_RE.test(email)) return { error: "รูปแบบอีเมลไม่ถูกต้อง" };
   if (password.length < MIN_PASSWORD) return { error: AUTH_ERRORS.weak_password };
   if (password.length > 72) return { error: "รหัสผ่านยาวเกินไป (ไม่เกิน 72 ตัวอักษร)" };
+  if (String(formData.get("password_confirm") ?? "") !== password) {
+    return { error: "รหัสผ่านทั้งสองช่องไม่ตรงกัน" };
+  }
   if (formData.get("accept") !== "on") {
     return { error: "กรุณายอมรับข้อกำหนดการใช้งานและนโยบายความเป็นส่วนตัว" };
   }

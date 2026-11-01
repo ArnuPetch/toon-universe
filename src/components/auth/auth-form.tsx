@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState, useId, useState } from "react";
 import { signIn, signUp, type AuthFormState } from "@/app/actions/auth";
+import { GoogleIcon } from "@/components/icons";
 
 type Mode = "signin" | "signup";
 
@@ -139,6 +140,26 @@ function CredentialsForm({
       </div>
 
       {signup && (
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor={`${id}-password-confirm`} className="text-sm font-semibold leading-[1.4] text-text-2">
+            ยืนยันรหัสผ่าน
+          </label>
+          <input
+            id={`${id}-password-confirm`}
+            name="password_confirm"
+            type="password"
+            autoComplete="new-password"
+            required
+            maxLength={72}
+            placeholder="กรอกรหัสผ่านอีกครั้ง"
+            aria-invalid={state.error ? true : undefined}
+            aria-describedby={state.error ? `${id}-error` : undefined}
+            className={INPUT}
+          />
+        </div>
+      )}
+
+      {signup && (
         <label className="flex items-start gap-2.5 text-sm leading-[1.4] text-muted">
           <input type="checkbox" name="accept" required className="mt-0.5 size-4 shrink-0 accent-primary" />
           <span>
@@ -171,6 +192,26 @@ function CredentialsForm({
       {signup && (
         <p className="text-center text-xs leading-[1.4] text-faint">สมัครและยืนยันอีเมลวันนี้ รับฟรี 5 coin</p>
       )}
+
+      <div className="flex items-center gap-3 text-xs leading-[1.4] text-faint" aria-hidden="true">
+        <span className="h-px flex-1 bg-line" />
+        หรือ
+        <span className="h-px flex-1 bg-line" />
+      </div>
+
+      {/* OAuth not wired yet (planned, see CLAUDE.md) — visible but disabled. */}
+      <button
+        type="button"
+        disabled
+        aria-describedby={`${id}-google-soon`}
+        className="flex h-11 items-center justify-center gap-2.5 rounded-full border border-line bg-surface-2 text-[15px] font-semibold text-text transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <GoogleIcon />
+        {signup ? "สมัครด้วย Google" : "เข้าสู่ระบบด้วย Google"}
+        <span id={`${id}-google-soon`} className="text-xs font-normal text-muted">
+          (เร็วๆ นี้)
+        </span>
+      </button>
     </form>
   );
 }

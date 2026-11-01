@@ -26,10 +26,10 @@
 
 ## Login / สมัครสมาชิก
 
-- Email + password อย่างเดียว (ยังไม่มี OAuth) — หน้า `/login` (`?mode=signup`, `?next=`), form อยู่ที่ `src/components/auth/auth-form.tsx`
+- Email + password อย่างเดียว (ยังไม่มี OAuth — ปุ่ม "เข้าสู่ระบบด้วย Google" มีแล้วแต่ disabled + "(เร็วๆ นี้)") — หน้า `/login` (`?mode=signup`, `?next=`), form อยู่ที่ `src/components/auth/auth-form.tsx`
 - Server Actions `src/app/actions/auth.ts`: `signIn`, `signUp`, `signOut`
   - map Supabase Auth error code → ข้อความไทยในไฟล์นั้นเอง (ไม่ใช่ `errors.ts` ซึ่งเป็นของ RPC); code ที่ไม่รู้จัก → ข้อความกลาง + log ไม่โชว์ข้อความดิบ
-  - สมัคร: รหัสผ่าน ≥ 8 ตัว, ต้องติ๊กยอมรับข้อกำหนด/นโยบาย (`/terms`, `/privacy` — ยังไม่มีหน้า)
+  - สมัคร: รหัสผ่าน ≥ 8 ตัว, ช่องยืนยันรหัสผ่าน (`password_confirm`) ต้องตรงกัน (เช็คฝั่ง server), ต้องติ๊กยอมรับข้อกำหนด/นโยบาย (`/terms`, `/privacy` — ยังไม่มีหน้า)
   - ยืนยัน email ปิด (local) → login ทันที; เปิด (production) → แสดง "ส่งลิงก์แล้ว" (Supabase ตอบเหมือนกันแม้ email ซ้ำ กันการเดา email)
 - `?next=` ผ่าน `safeNext()` (`src/lib/safe-next.ts`) เสมอ — รับเฉพาะ path ภายในเว็บ กัน open redirect
 - ลิงก์ยืนยัน email → `/auth/confirm` (`src/app/auth/confirm/route.ts`) รองรับทั้ง `?code=` (PKCE, template ปกติ) และ `?token_hash=&type=` (template custom) → trigger ใน DB ให้ welcome coin
