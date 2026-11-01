@@ -44,6 +44,9 @@ select results_eq(
   $$select jobname::text, schedule::text from cron.job order by jobname$$,
   $$values ('expire-welcome-coins', '*/10 * * * *'),
            ('purge-cron-history',   '0 3 * * *'),
+           ('purge-view-seen',      '10 3 * * *'),
+           ('refresh-also-read',    '17 * * * *'),
+           ('refresh-rank-stats',   '*/10 * * * *'),
            ('refresh-suspensions',  '* * * * *'),
            ('release-episodes',     '* * * * *')$$,
   'cron jobs are scheduled');

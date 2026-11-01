@@ -12,6 +12,7 @@
 | `20261101085756_server_functions.sql` | Server-side functions (RPC) |
 | `20261101120000_coin_checkout.sql` | เติม coin ผ่าน Stripe Checkout (PromptPay) |
 | `20261101130000_cron_jobs.sql` | Cron jobs (pg_cron) |
+| `20261101140000_ranking.sql` | นับยอดวิว, ranking, recommendation |
 
 ## Schema ต้นแบบ (`init_schema`)
 
@@ -81,7 +82,28 @@
 - Ban ไม่มี `ends_at` จึงไม่ถูกปลดโดย cron (ถ้าจะมี ban แบบมีเวลา ต้องปลด Auth ban ฝั่ง server ด้วย)
 - ดูผลการรัน: `select * from cron.job_run_details order by start_time desc`
 
+## Ranking & recommendation (`ranking`)
+
+| ส่วน | อยู่ที่ | ใครเรียก |
+|---|---|---|
+| นับวิว | `record_episode_view(p_episode_id, p_viewer_key)` → `episode_view_daily` | `service_role` เท่านั้น |
+| Ranking | MV `private.series_rank_stats` + `get_series_ranking(kind, period, genre_id, limit, offset)` | anon / authenticated |
+| คนที่อ่านเรื่องนี้ก็อ่าน | MV `private.series_also_read` + `get_series_recommendations(series_id, limit)` | anon / authenticated |
+
+- **นับวิว**: 1 viewer / ตอน / วัน (วันตามเวลาไทย `Asia/Bangkok`); dedupe ด้วย `private.episode_view_seen` (เก็บ 2 วัน); ไม่นับ uploader ดูเอง, ตอนที่ยังไม่ปล่อย/ถูกลบ, เรื่องที่ไม่ public
+  - `p_viewer_key` = user id จาก `getClaims()` หรือ `anon:<cookie tu_vid>` — server สร้างเอง ไม่รับจาก client
+  - ข้อจำกัด: anon ลบ cookie แล้วปั๊มวิวได้ → ถ้าเจอปัญหาค่อยเพิ่ม rate limit ต่อ IP
+- **Ranking kinds**: `views` (ยอดวิว), `rating` (Bayesian: บวกรีวิวเสมือน 5 อันที่ค่าเฉลี่ยของช่วงนั้น), `trending` (กิจกรรม = วิว + 10×ผู้ติดตามใหม่, เทียบกับช่วงก่อนหน้า, เฉพาะเรื่องที่โตขึ้น), `new` (เผยแพร่ครั้งแรกในช่วง), `updated` (มีตอนใหม่ในช่วง)
+- **Periods**: `day` = วันนี้ + เมื่อวาน (bucket รายวัน — กันว่างตอนเที่ยงคืน), `week` = 7 วัน, `month` = 30 วัน, `all`; `trending` + `all` → ใช้ `month`
+- `rating` นับเฉพาะรีวิวรายเรื่อง (`episode_id is null`) ที่ไม่ถูกซ่อน และเขียนในช่วงนั้น
+- **Also read**: ผู้อ่าน "อ่าน" เรื่อง = มี reading_progress / follow / bookshelf (ไม่นับ `plan_to_read`); ใช้ 50 เรื่องล่าสุดต่อคน; cosine similarity; **คู่เรื่องต้องมีผู้อ่านร่วม ≥ 3 คน** (กันเปิดเผยประวัติการอ่านของคนใดคนหนึ่ง — PDPA); เก็บ top 30 ต่อเรื่อง; ไม่พอ → เติมด้วยเรื่องที่แนวตรงกันมากสุด (แล้วยอดวิวเดือนนี้)
+- MV อยู่ใน `private` (ไม่ expose ผ่าน API, MV ใส่ RLS ไม่ได้); ฟังก์ชันเป็น `security invoker` join `public.series` → RLS + กรอง visibility + **เรตอายุของผู้เรียก** (ไม่ login = เห็นเฉพาะ `all`) ตอนอ่าน → เรื่องที่ถูกปิด/ลบหายทันทีไม่ต้องรอ refresh
+- `new` / `updated` อ่านจาก `series` สด; `views` / `rating` / `trending` ช้าได้ ≤ 10 นาที
+- `series.published_at` ตั้งโดย trigger ครั้งแรกที่ publish (ก่อนหน้านี้ไม่มีใครตั้ง → backfill = `created_at`)
+- Cron: `refresh-rank-stats` ทุก 10 นาที, `refresh-also-read` ทุกชั่วโมง (นาทีที่ 17) — ใช้ `refresh ... concurrently` ไม่ block ผู้อ่าน; `purge-view-seen` ทุกวัน 03:10 UTC
+- ถ้าข้อมูลโตมาก: `all` ของ `series_rank_stats` scan `episode_view_daily` ทั้งตาราง → ค่อยเพิ่มตารางยอดรวม; หรือย้าย refresh ไปเวลาที่คนน้อย
+
 ## Tests
 
-- pgTAP: `supabase/tests/database/server_functions.test.sql`, `coin_checkout.test.sql`, `cron_jobs.test.sql` — ผ่าน 102/102, ผ่าน `supabase db advisors`
+- pgTAP: `supabase/tests/database/server_functions.test.sql`, `coin_checkout.test.sql`, `cron_jobs.test.sql`, `ranking.test.sql` — ผ่าน 134/134, ผ่าน `supabase db advisors`
 - รัน: `npx supabase test db`

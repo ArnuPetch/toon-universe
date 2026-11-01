@@ -790,11 +790,24 @@ isOneToOne: false
 "fail_coin_purchase":
 { Args: { "p_purchase_id": number,"p_session_id": string,"p_status": Database["public"]['Enums']["payment_status"] }; Returns: Json
                            },
+"get_series_ranking":
+{ Args: { "p_genre_id"?: number,"p_kind": Database["public"]['Enums']["ranking_kind"],"p_limit"?: number,"p_offset"?: number,"p_period"?: Database["public"]['Enums']["ranking_period"] }; Returns: {
+              "age_rating": Database["public"]['Enums']["age_rating"],"cover_key": string,"follows": number,"last_episode_at": string,"published_at": string,"rank": number,"rating_avg": number,"rating_count": number,"score": number,"series_id": number,"slug": string,"status": Database["public"]['Enums']["series_status"],"title": string,"views": number
+            }[]
+                           },
+"get_series_recommendations":
+{ Args: { "p_limit"?: number,"p_series_id": number }; Returns: {
+              "age_rating": Database["public"]['Enums']["age_rating"],"cover_key": string,"reason": string,"series_id": number,"slug": string,"status": Database["public"]['Enums']["series_status"],"title": string
+            }[]
+                           },
 "lift_sanction":
 { Args: { "p_admin_id": string,"p_sanction_id": number }; Returns: Json
                            },
 "mark_withdrawal_paid":
 { Args: { "p_admin_id": string,"p_transfer_ref": string,"p_withdrawal_id": number }; Returns: Json
+                           },
+"record_episode_view":
+{ Args: { "p_episode_id": number,"p_viewer_key": string }; Returns: boolean
                            },
 "remove_episode":
 { Args: { "p_actor_id": string,"p_episode_id": number }; Returns: Json
@@ -819,7 +832,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "account_status": "active"|"suspended"|"banned","age_rating": "all"|"teen"|"mature","bookshelf_status": "reading"|"completed"|"plan_to_read","coin_kind": "purchased"|"welcome","coin_ledger_reason": "purchase"|"welcome_grant"|"welcome_expire"|"unlock"|"donation"|"refund"|"ban_forfeit"|"admin_adjust","earning_source": "unlock"|"donation","earning_status": "pending"|"withdrawn"|"reversed","moderation_status": "active"|"under_review"|"removed","payment_status": "pending"|"succeeded"|"failed"|"canceled","reading_direction": "ltr"|"rtl","reading_mode": "vertical"|"paged","report_reason": "copyright"|"inappropriate"|"wrong_age_rating"|"spam"|"abusive"|"unhidden_spoiler"|"fake_account"|"impersonation","report_status": "open"|"resolved"|"dismissed","report_target": "series"|"comment"|"review"|"user","sanction_kind": "suspend"|"ban","series_status": "ongoing"|"completed"|"hiatus","series_visibility": "draft"|"published","withdrawal_status": "pending"|"approved"|"paid"|"rejected"
+            "account_status": "active"|"suspended"|"banned","age_rating": "all"|"teen"|"mature","bookshelf_status": "reading"|"completed"|"plan_to_read","coin_kind": "purchased"|"welcome","coin_ledger_reason": "purchase"|"welcome_grant"|"welcome_expire"|"unlock"|"donation"|"refund"|"ban_forfeit"|"admin_adjust","earning_source": "unlock"|"donation","earning_status": "pending"|"withdrawn"|"reversed","moderation_status": "active"|"under_review"|"removed","payment_status": "pending"|"succeeded"|"failed"|"canceled","ranking_kind": "views"|"rating"|"trending"|"new"|"updated","ranking_period": "day"|"week"|"month"|"all","reading_direction": "ltr"|"rtl","reading_mode": "vertical"|"paged","report_reason": "copyright"|"inappropriate"|"wrong_age_rating"|"spam"|"abusive"|"unhidden_spoiler"|"fake_account"|"impersonation","report_status": "open"|"resolved"|"dismissed","report_target": "series"|"comment"|"review"|"user","sanction_kind": "suspend"|"ban","series_status": "ongoing"|"completed"|"hiatus","series_visibility": "draft"|"published","withdrawal_status": "pending"|"approved"|"paid"|"rejected"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -939,7 +952,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "account_status": ["active", "suspended", "banned"],"age_rating": ["all", "teen", "mature"],"bookshelf_status": ["reading", "completed", "plan_to_read"],"coin_kind": ["purchased", "welcome"],"coin_ledger_reason": ["purchase", "welcome_grant", "welcome_expire", "unlock", "donation", "refund", "ban_forfeit", "admin_adjust"],"earning_source": ["unlock", "donation"],"earning_status": ["pending", "withdrawn", "reversed"],"moderation_status": ["active", "under_review", "removed"],"payment_status": ["pending", "succeeded", "failed", "canceled"],"reading_direction": ["ltr", "rtl"],"reading_mode": ["vertical", "paged"],"report_reason": ["copyright", "inappropriate", "wrong_age_rating", "spam", "abusive", "unhidden_spoiler", "fake_account", "impersonation"],"report_status": ["open", "resolved", "dismissed"],"report_target": ["series", "comment", "review", "user"],"sanction_kind": ["suspend", "ban"],"series_status": ["ongoing", "completed", "hiatus"],"series_visibility": ["draft", "published"],"withdrawal_status": ["pending", "approved", "paid", "rejected"]
+            "account_status": ["active", "suspended", "banned"],"age_rating": ["all", "teen", "mature"],"bookshelf_status": ["reading", "completed", "plan_to_read"],"coin_kind": ["purchased", "welcome"],"coin_ledger_reason": ["purchase", "welcome_grant", "welcome_expire", "unlock", "donation", "refund", "ban_forfeit", "admin_adjust"],"earning_source": ["unlock", "donation"],"earning_status": ["pending", "withdrawn", "reversed"],"moderation_status": ["active", "under_review", "removed"],"payment_status": ["pending", "succeeded", "failed", "canceled"],"ranking_kind": ["views", "rating", "trending", "new", "updated"],"ranking_period": ["day", "week", "month", "all"],"reading_direction": ["ltr", "rtl"],"reading_mode": ["vertical", "paged"],"report_reason": ["copyright", "inappropriate", "wrong_age_rating", "spam", "abusive", "unhidden_spoiler", "fake_account", "impersonation"],"report_status": ["open", "resolved", "dismissed"],"report_target": ["series", "comment", "review", "user"],"sanction_kind": ["suspend", "ban"],"series_status": ["ongoing", "completed", "hiatus"],"series_visibility": ["draft", "published"],"withdrawal_status": ["pending", "approved", "paid", "rejected"]
           }
         }
 } as const

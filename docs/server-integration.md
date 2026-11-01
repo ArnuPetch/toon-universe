@@ -11,6 +11,7 @@
 ## Proxy
 
 - `src/proxy.ts` (Next 16 เปลี่ยน middleware → proxy) refresh token ด้วย `getClaims()` — เป็นที่เดียวที่ refresh
+- ตั้ง cookie `tu_vid` (UUID สุ่ม, httpOnly, 1 ปี) ให้ผู้เข้าชมที่ยังไม่มี — ใช้นับวิวของคนที่ไม่ได้ login; ตั้งใน request ด้วยเพื่อให้ Server Components ใน request แรกเห็น
 
 ## Server helpers
 
@@ -18,6 +19,7 @@
 - `server/rpc.ts`: wrapper ทุก RPC (ดู [database.md](database.md))
   - **ดึง id จาก session เอง ไม่รับจาก caller**
   - คืน `ActionResult` (`{ok,data}` / `{ok:false,code,message}`) ไม่ throw
+- `server/ranking.ts`: `getSeriesRanking`, `getSeriesRecommendations` (ใช้ client ผู้ใช้ → RLS + เรตอายุ), `recordEpisodeView` (service_role; viewer = user id จาก `getClaims()` หรือ cookie `tu_vid`) — เรียกตอน server ส่งหน้าของตอนจริง
 - `server/errors.ts`: map error code → ข้อความภาษาไทย
   - เพิ่ม code ใหม่ใน SQL ต้องเพิ่มที่นี่ด้วย
   - code ที่ไม่รู้จัก → `unexpected_error` + log
