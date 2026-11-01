@@ -17,6 +17,7 @@
 | `20261101160000_reader_pages.sql` | `search_series` — ค้นหา/กรองเรื่องสาธารณะที่ผู้เรียกเห็นได้ (RLS + เรตอายุ): ข้อความ (ชื่อเรื่อง/ผู้เขียน/ชื่อแนว, `ILIKE` escape wildcard แล้ว), แนว, สถานะ, ฟรี (ไม่มีตอนเสียเงินที่ปล่อยแล้ว) / เสียเงิน, เรียง `relevance`/`popular` (วิวเดือนนี้)/`updated`/`new`/`rating`/`title`; คืนตอนล่าสุด + `total_count`; limit ≤ 60, offset ≤ 10000 — anon/authenticated, security invoker |
 | `20261101170000_birth_date_lock.sql` | trigger `lock_birth_date` บน `user_private_info`: ผู้ใช้ (anon/authenticated) ตั้งวันเกิดได้ครั้งเดียวตอนยังเป็น null — แก้/ลบหลังจากนั้น → `birth_date_locked`; `service_role` (ฝ่าย support/admin) แก้ได้ |
 | `20261101180000_comments_reviews.sql` | กฎเขียนคอมเมนต์/รีวิว (trigger, ข้ามเมื่อเป็น `service_role`), แจ้งเตือน `comment_reply`, ซ่อนคอมเมนต์/รีวิวของคนที่โดนแบน, report ซ้ำไม่ได้, RPC `get_review_summary` — ดู [คอมเมนต์ + รีวิว](#คอมเมนต์--รีวิว-comments_reviews) |
+| `20261102090000_studio_admin.sql` | หน้า Uploader/Admin — ดู [Studio + Admin](#studio--admin-studio_admin) |
 
 ## Schema ต้นแบบ (`init_schema`)
 
@@ -119,8 +120,25 @@ Client เขียนตาราง `comments` / `reviews` / `reports` ตร�
 - `get_review_summary(series_id, episode_id default null)` → ค่าเฉลี่ย, จำนวน, histogram 1–5 ดาว แบบสด (security invoker; ไม่นับ hidden แม้เป็นของตัวเอง) — หน้าเรื่องใช้ค่านี้แทนคะแนนจาก MV
 - report คอมเมนต์/รีวิวซ้ำไม่ได้ (unique ต่อ reporter + target → `already_reported`)
 
+## Studio + Admin (`studio_admin`)
+
+- `episodes.page_count` ตาม `episode_pages` อัตโนมัติ (trigger `sync_page_count`, security definer เพราะ uploader ไม่มีสิทธิ์เขียนคอลัมน์นี้)
+- RPC (EXECUTE เฉพาะ `service_role`, id จาก session):
+
+| ฟังก์ชัน | ทำอะไร |
+|---|---|
+| `get_uploader_stats(uploader)` | ต่อเรื่อง (ไม่รวมที่ลบ): วิว ทั้งหมด/30 วัน, ผู้ติดตาม, ยอดซื้อ (unlock ที่ไม่ถูก refund รวม welcome coin), รายได้ (earning ที่ไม่ถูกหักคืน) — สด ไม่ใช้ MV เพราะต้องรวม draft/เรื่องที่ปิดตรวจ |
+| `get_uploader_episode_stats(uploader, series)` | วิว + ยอดซื้อรายตอน (เฉพาะเรื่องของ uploader คนนั้น) |
+| `get_uploader_balance(uploader)` | `withdrawable` (กฎเดียวกับ `request_withdrawal`), `waiting` (< 30 วัน หรือเรื่องถูกปิดตรวจ), `next_available_at`, `processing` (อยู่ในคำขอ pending/approved), `paid` |
+| `set_content_hidden(admin, comment\|review, id, hidden, note)` | ซ่อน/เลิกซ่อน; ซ่อนแล้วปิด report ที่เปิดอยู่ของรายการนั้นเป็น `resolved` |
+| `resolve_report(report, admin, resolved\|dismissed, note)` | ปิด report ที่ยัง `open` (ไม่งั้น `report_not_open`) |
+| `set_user_verified(user, admin, bool)` | verified badge |
+| `admin_find_users(admin, query, limit)` | ค้นด้วย email / username / ชื่อ / id (security definer เพื่ออ่าน `auth.users`; escape `%` `_`) |
+
+- กฎของ uploader ที่ DB บังคับอยู่แล้ว (RLS/trigger เดิม): เขียนได้เฉพาะเรื่องตัวเอง, บัญชีถูกระงับ → 42501, ราคาเปลี่ยนได้เดือนละครั้งหลังปล่อย + ตอนที่ปล่อยแล้วเลื่อนเวลาไม่ได้ (23514), ลบตอนตรงได้เฉพาะที่ยังไม่ปล่อย (ที่ปล่อยแล้วต้อง `remove_episode`)
+
 ## Tests
 
-- pgTAP: `supabase/tests/database/server_functions.test.sql`, `coin_checkout.test.sql`, `cron_jobs.test.sql`, `ranking.test.sql`, `series_page.test.sql`, `birth_date_lock.test.sql`, `reader_pages.test.sql`, `comments_reviews.test.sql` (กรองเฉพาะ fixture id ของตัวเอง จึงรันกับ DB ที่มีข้อมูลทดสอบได้) — ผ่าน `supabase db advisors`
+- pgTAP: `supabase/tests/database/server_functions.test.sql`, `coin_checkout.test.sql`, `cron_jobs.test.sql`, `ranking.test.sql`, `series_page.test.sql`, `birth_date_lock.test.sql`, `reader_pages.test.sql`, `comments_reviews.test.sql`, `studio_admin.test.sql` (กรองเฉพาะ fixture id ของตัวเอง จึงรันกับ DB ที่มีข้อมูลทดสอบได้) — ผ่าน `supabase db advisors`
 - test ใช้ fixture id ตายตัว (เช่น user `…a1`) → รันกับ DB ที่ใส่ข้อมูลทดสอบหน้าเว็บไว้แล้วจะชน/ผลเพี้ยน; รันหลัง `npx supabase db reset --local`
 - รัน: `npx supabase test db`

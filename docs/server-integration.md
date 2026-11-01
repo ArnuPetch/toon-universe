@@ -36,6 +36,12 @@
 - `emailRedirectTo` สร้างจาก host ของ request → ต้องอยู่ใน Redirect URLs ของ Supabase (local: `additional_redirect_urls` ใน `supabase/config.toml`; production: ตั้งใน Dashboard → Auth → URL Configuration)
 - เปิด `/login` ตอน login อยู่แล้ว → redirect ไป `next`
 
+## Admin (`server/admin.ts`)
+
+- loader ของหน้า `/admin` อ่านด้วย `service_role` (เห็นของที่ซ่อน/ถูกถอด, email, การเงินของคนอื่น) → **ทุก loader เช็ค `getAdminId()` (JWT `app_metadata.role`) ก่อน**; mutation ผ่าน wrapper ใน `rpc.ts` ซึ่ง DB เช็คซ้ำด้วย `assert_admin`
+- ไม่ใช่ admin → หน้า `/admin/*` ตอบ 404 (`AdminShell` ใน `src/components/admin/shell.tsx`)
+- ตั้ง admin: `app_metadata.role = 'admin'` (Dashboard → Auth → user → raw app meta data หรือ `auth.admin.updateUserById`) — ห้ามใช้ `user_metadata`
+
 ## Ban / lift กับ Supabase Auth
 
 - `banUser`: เรียก RPC ก่อน แล้วค่อย Auth ban (`ban_duration`)
@@ -69,7 +75,7 @@
   - ข้อมูลส่วนตัว (coin, แจ้งเตือน, อ่านต่อ) ไม่ cache เลย
 - อายุ cache (`src/lib/server/catalog-cache.ts`): ranking/trending/hero revalidate 10 นาที (ตามรอบ refresh MV), อัพเดตล่าสุด 1 นาที (ตอนใหม่ปล่อยโดย pg_cron ซึ่งแจ้ง Next ไม่ได้)
 - ทุกอย่างติด tag `catalog` → **อะไรที่ซ่อน/แสดงเนื้อหาต่อสาธารณะต้องเรียก `invalidateCatalog()`** (ล้างทันที `expire: 0`) — ตอนนี้ต่อไว้ที่ `removeSeries`, `removeEpisode`, `startContentHold`, `endContentHold`, `banUser` ใน `rpc.ts`
-  - หน้า uploader ที่จะทำ (publish/unpublish, แก้ชื่อ/ปก/เรตอายุ) ต้องเรียก `invalidateCatalog()` ด้วย
+  - หน้า uploader (`src/app/actions/studio.ts`) เรียกหลังแก้เรื่อง/season/ตอน/เผยแพร่ และ `setUserVerified` (badge แสดงบนหน้าเรื่อง)
 
 ## Types & Env
 

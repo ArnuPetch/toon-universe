@@ -303,3 +303,49 @@ export function endContentHold(seriesId: number) {
     }),
   ));
 }
+
+// =============================================================================
+// Admin moderation (*_studio_admin.sql)
+// =============================================================================
+
+type ReportStatus = Database["public"]["Enums"]["report_status"];
+
+/** Hide/unhide a comment or review; hiding resolves its open reports. */
+export function setContentHidden(input: {
+  targetType: "comment" | "review";
+  targetId: number;
+  hidden: boolean;
+  note?: string;
+}) {
+  return guarded(async () =>
+    callRpc<{ hidden: boolean; reports_resolved: number }>("set_content_hidden", {
+      p_admin_id: await requireAdminId(),
+      p_target_type: input.targetType,
+      p_target_id: input.targetId,
+      p_hidden: input.hidden,
+      p_note: input.note,
+    }),
+  );
+}
+
+export function resolveReport(input: { reportId: number; status: Exclude<ReportStatus, "open">; note?: string }) {
+  return guarded(async () =>
+    callRpc<{ report_id: number; status: ReportStatus }>("resolve_report", {
+      p_report_id: input.reportId,
+      p_admin_id: await requireAdminId(),
+      p_status: input.status,
+      p_note: input.note,
+    }),
+  );
+}
+
+/** Verified badge shows next to the author's name on public pages. */
+export function setUserVerified(input: { userId: string; verified: boolean }) {
+  return invalidatesCatalog(guarded(async () =>
+    callRpc<{ user_id: string; is_verified: boolean }>("set_user_verified", {
+      p_user_id: input.userId,
+      p_admin_id: await requireAdminId(),
+      p_verified: input.verified,
+    }),
+  ));
+}

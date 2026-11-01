@@ -41,3 +41,74 @@ export const SHELF_LABEL = {
   plan_to_read: "อยากอ่าน",
   completed: "อ่านจบแล้ว",
 } as const;
+
+const dateTimeFmt = new Intl.DateTimeFormat("th-TH", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "Asia/Bangkok",
+});
+
+/** ISO time → "1 พ.ย. 2569 18:00" (Thai time) */
+export function formatDateTime(iso: string) {
+  return dateTimeFmt.format(new Date(iso));
+}
+
+/** ISO time → "2026-11-05T18:00" for <input type="datetime-local"> in Thai time. */
+export function toBangkokLocalInput(iso: string) {
+  return new Date(Date.parse(iso) + 7 * 3_600_000).toISOString().slice(0, 16);
+}
+
+export function formatNumber(n: number) {
+  return n.toLocaleString("th-TH");
+}
+
+// --- Studio / admin labels ---
+
+export const VISIBILITY_LABEL = { draft: "ฉบับร่าง", published: "เผยแพร่แล้ว" } as const;
+
+export const MODERATION_LABEL = {
+  active: "ปกติ",
+  under_review: "ปิดตรวจสอบ",
+  removed: "ถูกถอด",
+} as const;
+
+export const EPISODE_STATE_LABEL = {
+  draft: "ฉบับร่าง",
+  scheduled: "ตั้งเวลาไว้",
+  released: "เผยแพร่แล้ว",
+} as const;
+
+export const READING_MODE_LABEL = { vertical: "เลื่อนลง (manhwa)", paged: "พลิกหน้า (manga)" } as const;
+export const READING_DIRECTION_LABEL = { ltr: "ซ้าย → ขวา", rtl: "ขวา → ซ้าย" } as const;
+
+export const WITHDRAWAL_STATUS_LABEL = {
+  pending: "รอตรวจสอบ",
+  approved: "อนุมัติแล้ว รอโอน",
+  paid: "โอนแล้ว",
+  rejected: "ไม่อนุมัติ",
+} as const;
+
+export const EARNING_STATUS_LABEL = { pending: "รอถอน", withdrawn: "ถอนแล้ว", reversed: "ถูกหักคืน" } as const;
+export const EARNING_SOURCE_LABEL = { unlock: "ปลดล็อกตอน", donation: "สนับสนุน" } as const;
+
+export const ACCOUNT_STATUS_LABEL = { active: "ปกติ", suspended: "ระงับชั่วคราว", banned: "แบน" } as const;
+
+export const REPORT_TARGET_LABEL = {
+  series: "ผลงาน",
+  comment: "ความคิดเห็น",
+  review: "รีวิว",
+  user: "ผู้ใช้",
+} as const;
+
+export const REPORT_REASON_LABEL = {
+  copyright: "ละเมิดลิขสิทธิ์",
+  inappropriate: "เนื้อหาไม่เหมาะสม",
+  wrong_age_rating: "เรตอายุไม่ถูกต้อง",
+  spam: "สแปม",
+  abusive: "คำหยาบ / คุกคาม",
+  unhidden_spoiler: "สปอยล์ไม่ซ่อน",
+  fake_account: "บัญชีปลอม",
+  impersonation: "แอบอ้างตัวตน",
+} as const;
+
+export const REPORT_STATUS_LABEL = { open: "รอจัดการ", resolved: "จัดการแล้ว", dismissed: "ยกฟ้อง" } as const;

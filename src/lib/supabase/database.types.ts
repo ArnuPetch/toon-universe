@@ -769,7 +769,12 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "attach_checkout_session":
+            "admin_find_users":
+{ Args: { "p_admin_id": string,"p_limit"?: number,"p_query": string }; Returns: {
+              "created_at": string,"display_name": string,"email": string,"id": string,"is_admin": boolean,"is_verified": boolean,"series_count": number,"status": Database["public"]['Enums']["account_status"],"username": string
+            }[]
+                           },
+"attach_checkout_session":
 { Args: { "p_purchase_id": number,"p_session_id": string,"p_user_id": string }; Returns: undefined
                            },
 "ban_user":
@@ -810,6 +815,19 @@ isOneToOne: false
               "follows": number,"rating_avg": number,"rating_count": number,"views": number
             }[]
                            },
+"get_uploader_balance":
+{ Args: { "p_uploader_id": string }; Returns: Json
+                           },
+"get_uploader_episode_stats":
+{ Args: { "p_series_id": number,"p_uploader_id": string }; Returns: {
+              "episode_id": number,"unlocks": number,"views": number
+            }[]
+                           },
+"get_uploader_stats":
+{ Args: { "p_uploader_id": string }; Returns: {
+              "followers": number,"revenue": number,"revenue_30d": number,"series_id": number,"unlocks": number,"unlocks_30d": number,"views": number,"views_30d": number
+            }[]
+                           },
 "lift_sanction":
 { Args: { "p_admin_id": string,"p_sanction_id": number }; Returns: Json
                            },
@@ -828,6 +846,9 @@ isOneToOne: false
 "request_withdrawal":
 { Args: { "p_uploader_id": string }; Returns: Json
                            },
+"resolve_report":
+{ Args: { "p_admin_id": string,"p_note"?: string,"p_report_id": number,"p_status": Database["public"]['Enums']["report_status"] }; Returns: Json
+                           },
 "review_withdrawal":
 { Args: { "p_admin_id": string,"p_approve": boolean,"p_reject_reason"?: string,"p_withdrawal_id": number }; Returns: Json
                            },
@@ -835,6 +856,12 @@ isOneToOne: false
 { Args: { "p_genre_id"?: number,"p_limit"?: number,"p_offset"?: number,"p_price"?: string,"p_query"?: string,"p_sort"?: string,"p_status"?: Database["public"]['Enums']["series_status"] }; Returns: {
               "age_rating": Database["public"]['Enums']["age_rating"],"cover_key": string,"last_episode_at": string,"latest_episode_at": string,"latest_episode_number": number,"latest_episode_price": number,"published_at": string,"rating_avg": number,"rating_count": number,"series_id": number,"slug": string,"status": Database["public"]['Enums']["series_status"],"title": string,"total_count": number,"views": number
             }[]
+                           },
+"set_content_hidden":
+{ Args: { "p_admin_id": string,"p_hidden": boolean,"p_note"?: string,"p_target_id": number,"p_target_type": Database["public"]['Enums']["report_target"] }; Returns: Json
+                           },
+"set_user_verified":
+{ Args: { "p_admin_id": string,"p_user_id": string,"p_verified": boolean }; Returns: Json
                            },
 "start_content_hold":
 { Args: { "p_admin_id": string,"p_reason": string,"p_series_id": number }; Returns: Json

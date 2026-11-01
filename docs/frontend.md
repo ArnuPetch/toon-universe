@@ -57,6 +57,7 @@
 - `/series/[slug]`, `/series/[slug]/[number]` (ดูด้านล่าง)
 - `/coins` (ดูด้านล่าง)
 - คอมเมนต์ + รีวิว บนหน้าเรื่อง/หน้าอ่าน (ดูด้านล่าง)
+- `/studio/*` (Uploader) และ `/admin/*` (ดู "สตูดิโอ (Uploader)" / "Admin" ด้านล่าง)
 - หน้าอื่นของ Reader (ดู "หน้า Browse / ส่วนตัว" ด้านล่าง): `/search`, `/ranking`, `/genres`, `/genres/[slug]`, `/updates`, `/bookshelf`, `/notifications`, `/profile`, `/forgot-password`, `/reset-password`, `/terms`, `/privacy`
 
 ## หน้าเรื่อง / หน้าอ่าน
@@ -76,7 +77,7 @@
 - หน้าเรื่อง: ใต้รายชื่อตอน; หน้าอ่าน: ใต้หน้าของตอน (กว้าง 800) — แสดงเมื่อผ่านเรตอายุ, ใน `<Suspense>`
 - Spoiler: ข้อความถูกบังจนกด "แตะเพื่อดู"; รายงาน = `<dialog>` เลือกเหตุผล spam / คำหยาบ / สปอยล์ไม่ซ่อน
 - บันทึก/ลบรีวิว → `router.refresh()` ให้คะแนนบนหัวเรื่อง + สรุปอัพเดต
-- ยังไม่มี: ไลก์คอมเมนต์, เรียงคอมเมนต์แบบอื่น, admin ซ่อนคอมเมนต์ (รอหน้า Admin — ตั้ง `hidden_at` ด้วย `service_role`)
+- ยังไม่มี: ไลก์คอมเมนต์, เรียงคอมเมนต์แบบอื่น (admin ซ่อนได้ที่ `/admin/reports`)
 
 ## หน้าเติม coin (`/coins`)
 
@@ -97,9 +98,26 @@
 - ลืมรหัสผ่าน: `/forgot-password` → `requestPasswordReset` (`resetPasswordForEmail`, redirect `/auth/confirm?next=/reset-password` — ข้อความเหมือนกันทุกกรณีกันเดาอีเมล) → `/auth/confirm` แลก code เป็น session → `/reset-password` (`updatePassword`); ลิงก์ "ลืมรหัสผ่าน?" อยู่ในฟอร์มเข้าสู่ระบบ; `/login`, `/forgot-password`, `/reset-password` ใช้ `AuthShell`
 - `/terms`, `/privacy` เป็นหน้า static จาก `docs/policies.md` + `coin-and-revenue.md` — **ร่าง ต้องให้ฝ่ายกฎหมายตรวจก่อนเปิดจริง**
 
+## สตูดิโอ (Uploader) `/studio`
+
+- ทางเข้า: `/profile` → "สตูดิโอ · อัพโหลดผลงาน" (และ "ผู้ดูแลระบบ" ถ้าเป็น admin); แจ้งเตือน `withdrawal_update` → `/studio/earnings`, `moderation` → `/studio/series/[id]`
+- ข้อมูล: `src/lib/server/studio.ts` — `getStudioOverview` (เรื่องของฉัน + สถิติ + ยอดเงิน), `getStudioSeries`, `getStudioEpisode`, `getEarnings`; อ่านในนามผู้ใช้ (RLS) + RPC สถิติ/ยอดเงินด้วย `service_role` (id จาก session) — **ไม่ cache**
+- Actions: `src/app/actions/studio.ts` — เขียนตารางตรงผ่าน RLS (`saveSeries`, `setSeriesVisibility`, `saveSeason`/`deleteSeason`, `saveEpisode`, `saveEpisodePages`, `savePayoutAccount`), ส่วนที่คืน coin ผ่าน RPC (`deleteSeries` → `remove_series`, `deleteEpisode` ของตอนที่ปล่อยแล้ว → `remove_episode`, `requestWithdrawalAction`); error ของ DB แปลงใน `writeError()` (42501 = ถูกระงับ, 23505 = slug/เลขตอนซ้ำ, 23514 = ราคา/เวลาเผยแพร่)
+- หน้า: `/studio` (สรุป + รายการเรื่อง), `/studio/series/new`, `/studio/series/[id]` (สถานะ/เผยแพร่, สถิติ, ตอน, ข้อมูลเรื่อง, season, ลบ — ลบต้องพิมพ์ชื่อเรื่อง), `/studio/series/[id]/episodes/new|[episodeId]` (`EpisodeEditor`), `/studio/earnings`
+- เรื่องใหม่เป็นฉบับร่างเสมอ; slug เว้นว่าง → สร้างจากชื่ออังกฤษหรือ `series-xxxxxx`; แนว 1–5
+- ตอน: ฉบับร่าง / เผยแพร่ทันที / ตั้งเวลา (`datetime-local` = เวลาไทย); ต้องมีหน้าก่อนเผยแพร่ (`episode_has_no_pages`); ตอนที่ปล่อยแล้วไม่ส่ง `publish_at` อีก
+- อัพโหลดหน้า (`components/studio/page-uploader.tsx`): หลายไฟล์/ลากวาง, เรียงชื่อไฟล์แบบ numeric, สลับ/ลบ, อ่านขนาดรูปในเบราว์เซอร์ → `saveEpisodePages` แทนที่ทั้งตอน — **ยังไม่อัพโหลดรูปจริง** (storage_key `pending/...`) และยังไม่รองรับ .zip → ทำตอนเชื่อม R2 (`TODO(R2)`)
+- ยังไม่มี: อัพโหลดปก (รอ R2), กราฟสถิติรายวัน, watermark
+
+## Admin `/admin`
+
+- ข้อมูล: `src/lib/server/admin.ts` (ทุก loader เช็ค admin ก่อน — ดู [server-integration.md](server-integration.md#admin-serveradmints)); actions: `src/app/actions/admin.ts` → wrapper ใน `rpc.ts`
+- หน้า: `/admin` (งานที่รอ), `/admin/reports?status=&type=` (รวม report ที่ชี้เป้าเดียวกันเป็นการ์ดเดียว; ซ่อน/ระงับผู้เขียน/ปิดตรวจ/ถอดเรื่อง/แบน/ยกฟ้อง — action ที่มาจาก report ปิด report ให้ด้วย), `/admin/withdrawals?status=` (อนุมัติ/ไม่อนุมัติ → โอนเอง → บันทึกเลขอ้างอิง), `/admin/users?q=` + `/admin/users/[id]` (badge, ระงับ 1/3/7/30 วัน/ไม่มีกำหนด, แบน, ปลด), `/admin/series?q=&filter=` (ปิดตรวจ/เปิดคืน/ถอด)
+- ปุ่มทุกอัน = `AdminAction` (`components/admin/admin-action.tsx`) — action ที่ต้องใส่เหตุผลหรือย้อนกลับไม่ได้เปิด `<dialog>` ยืนยันก่อน
+
 ## ตรวจงานก่อนส่ง
 
 1. `npx tsc --noEmit` · `npm run lint` · `npm run build`
-2. เปิดดูจริงทั้ง 1440 และ 390 ให้หน้าตาเข้าชุดกับหน้า Home (headless Firefox: `firefox --headless --screenshot <out> --window-size=1440,2240 <url>`; snap firefox เขียนได้ใน `~/snap/firefox/common/`)
+2. เปิดดูจริงทั้ง 1440 และ 390 (headless screenshot บางครั้งจับภาพก่อน Suspense แสดงผล → ถ่ายซ้ำ) ให้หน้าตาเข้าชุดกับหน้า Home (headless Firefox: `firefox --headless --screenshot <out> --window-size=1440,2240 <url>`; snap firefox เขียนได้ใน `~/snap/firefox/common/`)
 3. ทดสอบทั้งสถานะ login / ไม่ login
 4. ข้อมูลทดสอบใส่ใน DB local เท่านั้น (ไม่ commit); user ที่ insert เองใน `auth.users` ต้องตั้งคอลัมน์ token เป็น `''` ไม่งั้น login ไม่ได้

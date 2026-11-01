@@ -6,11 +6,12 @@ import { signOut } from "@/app/actions/auth";
 import { BottomTabBar } from "@/components/bottom-tab-bar";
 import { coverInitial } from "@/components/cover";
 import { formatDate } from "@/components/format";
-import { BellIcon, CheckIcon, ChevronRightIcon, CoinIcon, ShelfIcon } from "@/components/icons";
+import { BellIcon, CheckIcon, ChevronRightIcon, CoinIcon, PenIcon, ShelfIcon, ShieldIcon } from "@/components/icons";
 import { PageMain, PageTitle, SignInPrompt } from "@/components/page";
 import { BirthDateForm, PasswordForm, ProfileForm } from "@/components/profile/profile-forms";
 import { Section, SectionSkeleton } from "@/components/section";
 import { TopBar } from "@/components/top-bar";
+import { getClaims } from "@/lib/server/auth";
 import { getWallet } from "@/lib/server/coins";
 import { getProfile } from "@/lib/server/library";
 
@@ -48,7 +49,7 @@ export default function ProfilePage() {
 const card = "rounded-[20px] bg-surface p-5 lg:p-6";
 
 async function ProfileContent() {
-  const [profile, wallet] = await Promise.all([getProfile(), getWallet()]);
+  const [profile, wallet, claims] = await Promise.all([getProfile(), getWallet(), getClaims()]);
   if (!profile) {
     return <SignInPrompt next="/profile" text="จัดการโปรไฟล์ ดู coin และชั้นหนังสือของคุณ" />;
   }
@@ -89,10 +90,14 @@ async function ProfileContent() {
         </div>
       </section>
 
-      <nav aria-label="ทางลัด" className="grid gap-3 sm:grid-cols-3">
+      <nav aria-label="ทางลัด" className="grid gap-3 sm:grid-cols-2">
         <QuickLink href="/coins" icon={<CoinIcon className="size-5" />} label="coin ของฉัน" value={coins.toLocaleString("th-TH")} />
         <QuickLink href="/bookshelf" icon={<ShelfIcon size={20} className="text-primary" />} label="ชั้นหนังสือ" />
         <QuickLink href="/notifications" icon={<BellIcon size={20} className="text-primary" />} label="การแจ้งเตือน" />
+        <QuickLink href="/studio" icon={<PenIcon size={20} className="text-primary" />} label="สตูดิโอ · อัพโหลดผลงาน" />
+        {claims?.app_metadata?.role === "admin" && (
+          <QuickLink href="/admin" icon={<ShieldIcon size={20} className="text-primary" />} label="ผู้ดูแลระบบ" />
+        )}
       </nav>
 
       <Section title="ข้อมูลโปรไฟล์">

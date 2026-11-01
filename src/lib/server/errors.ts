@@ -7,6 +7,14 @@ export const ERROR_MESSAGES = {
   unexpected_error: "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง",
   payment_unavailable: "ระบบชำระเงินขัดข้องชั่วคราว กรุณาลองใหม่อีกครั้ง",
 
+  // Studio (app level: unique / check violations of direct table writes)
+  slug_taken: "ลิงก์เรื่อง (slug) นี้มีคนใช้แล้ว ลองเปลี่ยนเป็นอย่างอื่น",
+  episode_number_taken: "มีตอนที่ใช้เลขนี้แล้ว",
+  season_number_taken: "มี season ที่ใช้เลขนี้แล้ว",
+  price_change_too_soon: "ตอนที่เผยแพร่แล้วเปลี่ยนราคาได้เดือนละ 1 ครั้ง",
+  episode_released_locked: "ตอนที่เผยแพร่แล้วเปลี่ยนเวลาเผยแพร่ไม่ได้",
+  episode_has_no_pages: "อัพโหลดหน้าของตอนก่อนเผยแพร่",
+
   // Account
   user_not_found: "ไม่พบผู้ใช้",
   account_not_active: "บัญชีนี้ถูกระงับการใช้งาน",
@@ -65,6 +73,9 @@ export const ERROR_MESSAGES = {
   series_not_active: "เรื่องนี้ไม่อยู่ในสถานะที่ปิดตรวจได้",
   series_not_under_review: "เรื่องนี้ไม่ได้อยู่ระหว่างปิดตรวจ",
   hold_not_open: "ไม่มีการปิดตรวจที่เปิดอยู่",
+
+  // Admin moderation (*_studio_admin.sql)
+  report_not_open: "รายงานนี้ถูกจัดการไปแล้ว",
 } as const;
 
 export type ErrorCode = keyof typeof ERROR_MESSAGES;

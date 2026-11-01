@@ -142,7 +142,7 @@ const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : n
 function describe(
   type: string,
   p: Payload,
-  series: { slug: string; title: string } | null,
+  series: { id: number; slug: string; title: string } | null,
   episode: { number: number } | null,
 ): Pick<NotificationItem, "title" | "body" | "href"> {
   const seriesTitle = series?.title ?? str(p.series_title) ?? "ผลงาน";
@@ -173,8 +173,8 @@ function describe(
         title: "คำขอถอนเงิน",
         body: `${amount != null ? `${amount.toLocaleString("th-TH")} บาท · ` : ""}${
           WITHDRAWAL_STATUS[String(p.status)] ?? "อัพเดตสถานะ"
-        }${reason ? ` — ${reason}` : ""}`,
-        href: null,
+        }${reason ? ` — ${reason === "account_banned" ? "บัญชีถูกแบน" : reason}` : ""}`,
+        href: "/studio/earnings",
       };
     }
     case "moderation": {
@@ -185,7 +185,8 @@ function describe(
         body: started
           ? `ผลงานถูกปิดชั่วคราวเพื่อตรวจสอบ${reason ? ` — ${reason}` : ""}`
           : "ผลงานเปิดให้อ่านตามปกติแล้ว",
-        href: series ? `/series/${series.slug}` : null,
+        // Only the uploader gets these → their studio page for the series.
+        href: series ? `/studio/series/${series.id}` : null,
       };
     }
     case "comment_reply": {
@@ -211,7 +212,7 @@ export async function getNotifications(): Promise<{ items: NotificationItem[]; n
   const db = await createClient();
   const { data, error } = await db
     .from("notifications")
-    .select("id, type, payload, read_at, created_at, series(slug, title), episodes(number)")
+    .select("id, type, payload, read_at, created_at, series(id, slug, title), episodes(number)")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(NOTIFICATION_LIMIT);
