@@ -48,6 +48,17 @@
 - Proxy ข้าม `/api/stripe/webhook` (ไม่มี session)
 - ทดสอบ local: `stripe listen --forward-to localhost:3000/api/stripe/webhook` แล้วใส่ `whsec_…` ที่ได้ใน `STRIPE_WEBHOOK_SECRET`
 
+## Cache ข้อมูลสาธารณะ (catalog)
+
+- เปิด `cacheComponents` → ข้อมูลที่อ่าน cookie ต้องอยู่ใน `<Suspense>`; ใน `'use cache'` ห้ามอ่าน cookie/header
+- ส่วนรวมของหน้า Home (hero, ranking, อัพเดตล่าสุด, กำลังมาแรง) ใน `src/lib/server/home.ts`:
+  - **ไม่ login** → `'use cache'` + `createPublicClient()` (`src/lib/supabase/public.ts`, anon ไม่มี session → เห็นเฉพาะเรต `all`) ใช้ร่วมกันทุกคน
+  - **login** → query สดด้วย `createClient()` (RLS + เรตอายุของผู้ใช้) — ไม่ cache เพราะผลต่างกันตามอายุ
+  - ข้อมูลส่วนตัว (coin, แจ้งเตือน, อ่านต่อ) ไม่ cache เลย
+- อายุ cache (`src/lib/server/catalog-cache.ts`): ranking/trending/hero revalidate 10 นาที (ตามรอบ refresh MV), อัพเดตล่าสุด 1 นาที (ตอนใหม่ปล่อยโดย pg_cron ซึ่งแจ้ง Next ไม่ได้)
+- ทุกอย่างติด tag `catalog` → **อะไรที่ซ่อน/แสดงเนื้อหาต่อสาธารณะต้องเรียก `invalidateCatalog()`** (ล้างทันที `expire: 0`) — ตอนนี้ต่อไว้ที่ `removeSeries`, `removeEpisode`, `startContentHold`, `endContentHold`, `banUser` ใน `rpc.ts`
+  - หน้า uploader ที่จะทำ (publish/unpublish, แก้ชื่อ/ปก/เรตอายุ) ต้องเรียก `invalidateCatalog()` ด้วย
+
 ## Types & Env
 
 - Types: `npm run db:types` → `src/lib/supabase/database.types.ts` (รันใหม่ทุกครั้งที่แก้ schema)

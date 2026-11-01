@@ -1,69 +1,123 @@
-import Image from "next/image";
+import { Suspense } from "react";
+import { BottomTabBar } from "@/components/home/bottom-tab-bar";
+import { ContinueCard, RankItem, TrendingCard, UpdatedCard } from "@/components/home/cards";
+import { HeroCarousel } from "@/components/home/hero-carousel";
+import { RankingSection } from "@/components/home/ranking-section";
+import { Rail, Section, SectionSkeleton } from "@/components/home/section";
+import { TopBar } from "@/components/home/top-bar";
+import { FireIcon } from "@/components/icons";
+import {
+  getContinueReading,
+  getHeroSeries,
+  getRecentlyUpdated,
+  getTrending,
+  getViewRankings,
+  type RankingEntry,
+} from "@/lib/server/home";
 
-export default function Home() {
+// Home page — Figma "Toon Universe — หน้าหลัก" (Desktop 3:2, Mobile 3:333).
+// Every section reads as the current viewer (RLS + age rating), so each one
+// streams in behind its own Suspense boundary.
+
+export default function HomePage() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+    <>
+      <TopBar />
+      <main className="mx-auto flex w-full max-w-[1440px] flex-col gap-8 px-4 pb-24 pt-4 lg:gap-12 lg:px-12 lg:pb-[139px] lg:pt-8">
+        <Suspense fallback={<SectionSkeleton className="h-[360px] rounded-[20px] lg:h-[420px]" />}>
+          <Hero />
+        </Suspense>
+        <Suspense fallback={null}>
+          <ContinueReadingSection />
+        </Suspense>
+        <Suspense fallback={<SectionSkeleton className="h-[502px] lg:h-[524px]" />}>
+          <Ranking />
+        </Suspense>
+        <Suspense fallback={<SectionSkeleton className="h-[627px] lg:h-[286px]" />}>
+          <RecentlyUpdated />
+        </Suspense>
+        <Suspense fallback={<SectionSkeleton className="h-[277px] lg:h-[438px]" />}>
+          <Trending />
+        </Suspense>
       </main>
-    </div>
+      <BottomTabBar active="/" />
+    </>
+  );
+}
+
+async function Hero() {
+  const items = await getHeroSeries();
+  if (items.length === 0) return null;
+  return <HeroCarousel items={items} />;
+}
+
+async function ContinueReadingSection() {
+  const items = await getContinueReading();
+  if (items.length === 0) return null;
+  return (
+    <Section title="อ่านต่อ" seeAllHref="/bookshelf">
+      <Rail desktopClass="lg:grid lg:grid-cols-4 lg:gap-5">
+        {items.slice(0, 4).map((item) => (
+          <ContinueCard key={item.id} item={item} />
+        ))}
+      </Rail>
+    </Section>
+  );
+}
+
+function RankingList({ items }: { items: RankingEntry[] }) {
+  if (items.length === 0) return null;
+  return (
+    // Desktop: two columns, 1–5 on the left and 6–10 on the right.
+    <ol className="grid gap-3 lg:grid-flow-col lg:grid-cols-2 lg:grid-rows-5 lg:gap-x-5">
+      {items.map((item, i) => (
+        <RankItem key={item.id} item={item} className={i >= 5 ? "max-lg:hidden" : undefined} />
+      ))}
+    </ol>
+  );
+}
+
+async function Ranking() {
+  const lists = await getViewRankings();
+  return (
+    <RankingSection
+      lists={{
+        day: <RankingList items={lists.day} />,
+        week: <RankingList items={lists.week} />,
+        month: <RankingList items={lists.month} />,
+      }}
+    />
+  );
+}
+
+async function RecentlyUpdated() {
+  const { items, now } = await getRecentlyUpdated();
+  if (items.length === 0) return null;
+  return (
+    <Section title="อัพเดตล่าสุด" seeAllHref="/updates">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-4 lg:grid-cols-8 lg:gap-5">
+        {items.map((item, i) => (
+          <div key={item.id} className={i >= 4 ? "max-sm:hidden" : undefined}>
+            <UpdatedCard item={item} now={now} />
+          </div>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+async function Trending() {
+  const items = await getTrending();
+  if (items.length === 0) return null;
+  return (
+    <Section title="กำลังมาแรง" icon={<FireIcon className="size-5 lg:size-[22px]" />} seeAllHref="/ranking?kind=trending">
+      <Rail desktopClass="lg:grid lg:grid-cols-5 lg:gap-5">
+        {items.map((item, i) => (
+          <div key={item.id} className={`contents ${i >= 5 ? "lg:hidden" : ""}`}>
+            <TrendingCard item={item} />
+          </div>
+        ))}
+      </Rail>
+    </Section>
   );
 }

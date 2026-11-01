@@ -3,6 +3,7 @@ import type { PostgrestError } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Database } from "@/lib/supabase/database.types";
 import { requireAdminId, requireUserId } from "./auth";
+import { invalidateCatalog } from "./catalog-cache";
 import { AppError, type ActionResult, fail, isErrorCode } from "./errors";
 
 // Wrappers around the service-role-only Postgres RPCs.
@@ -35,6 +36,13 @@ function mapPostgrestError(fn: string, error: PostgrestError): ActionResult<neve
 }
 
 /** Run an auth guard + action, converting AppError into an ActionResult. */
+/** On success, drop cached public catalog data (the change hides/shows content). */
+async function invalidatesCatalog<T>(result: Promise<ActionResult<T>>): Promise<ActionResult<T>> {
+  const r = await result;
+  if (r.ok) invalidateCatalog();
+  return r;
+}
+
 export async function guarded<T>(run: () => Promise<ActionResult<T>>): Promise<ActionResult<T>> {
   try {
     return await run();
@@ -151,21 +159,21 @@ export function donate(input: {
 // =============================================================================
 
 export function removeSeries(seriesId: number) {
-  return guarded(async () =>
+  return invalidatesCatalog(guarded(async () =>
     callRpc<RemoveSeriesResult>("remove_series", {
       p_series_id: seriesId,
       p_actor_id: await requireUserId(),
     }),
-  );
+  ));
 }
 
 export function removeEpisode(episodeId: number) {
-  return guarded(async () =>
+  return invalidatesCatalog(guarded(async () =>
     callRpc<RemoveEpisodeResult>("remove_episode", {
       p_episode_id: episodeId,
       p_actor_id: await requireUserId(),
     }),
-  );
+  ));
 }
 
 export function requestWithdrawal() {
@@ -237,6 +245,7 @@ export function banUser(input: { userId: string; reason: string }) {
       p_reason: input.reason,
     });
     if (!result.ok) return result;
+    invalidateCatalog(); // the ban hides the user's series
 
     const sessionRevoked = await syncAuthBan(input.userId, true);
     return { ok: true, data: { ...result.data, session_revoked: sessionRevoked } };
@@ -277,20 +286,20 @@ export async function syncAuthBan(userId: string, banned: boolean): Promise<bool
 }
 
 export function startContentHold(input: { seriesId: number; reason: string }) {
-  return guarded(async () =>
+  return invalidatesCatalog(guarded(async () =>
     callRpc<StartHoldResult>("start_content_hold", {
       p_series_id: input.seriesId,
       p_admin_id: await requireAdminId(),
       p_reason: input.reason,
     }),
-  );
+  ));
 }
 
 export function endContentHold(seriesId: number) {
-  return guarded(async () =>
+  return invalidatesCatalog(guarded(async () =>
     callRpc<EndHoldResult>("end_content_hold", {
       p_series_id: seriesId,
       p_admin_id: await requireAdminId(),
     }),
-  );
+  ));
 }
