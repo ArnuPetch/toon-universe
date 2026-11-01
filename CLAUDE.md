@@ -36,6 +36,7 @@ TypeScript · Next.js · Supabase · Cloudflare R2 · Vercel Hobby (dev) → Clo
 - Server-side functions (RPC): unlock, donate, remove + refund, withdrawal, sanction, content hold พร้อม pgTAP tests — [docs/database.md](docs/database.md)
 - เชื่อม Next.js กับ Supabase (`src/lib/`): clients, proxy, auth, RPC wrapper, error mapping, ban sync — [docs/server-integration.md](docs/server-integration.md)
 - Stripe Checkout (PromptPay) + webhook → `coin_purchases` / `coin_wallets` / `coin_ledger` — [docs/server-integration.md](docs/server-integration.md#stripe-checkout-promptpay)
+- Cron (pg_cron): แจ้งตอนใหม่ + `last_episode_at`, ปลด suspend ที่ครบเวลา, ตัด welcome coin หมดอายุ — [docs/database.md](docs/database.md#cron-jobs-cron_jobs)
 
 กฎสำคัญ (ห้ามพลาด):
 
@@ -49,9 +50,8 @@ TypeScript · Next.js · Supabase · Cloudflare R2 · Vercel Hobby (dev) → Clo
 ยังไม่ได้ทำ (เรียงตามลำดับที่ควรทำ):
 
 1. ทดสอบ Stripe กับ sandbox จริง — ดู [Stripe sandbox](#stripe-sandbox) ด้านล่าง
-2. Cron: ตัด welcome coin ที่หมดอายุ, ปลด suspend ที่ครบ `ends_at` (`private.refresh_user_status`), ส่ง notification ตอนใหม่ที่ตั้งเวลาไว้
-3. Ranking / recommendation (materialized views)
-4. หน้าเว็บ Reader / Uploader / Admin
+2. Ranking / recommendation (materialized views)
+3. หน้าเว็บ Reader / Uploader / Admin
 
 Local dev: `npx supabase start` (Studio: http://127.0.0.1:54323), `npx supabase db reset --local` เพื่อ apply migration ใหม่, `npx supabase test db` เพื่อรัน pgTAP tests
 

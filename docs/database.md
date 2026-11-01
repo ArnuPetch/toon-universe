@@ -11,6 +11,7 @@
 | `20261101081833_init_schema.sql` | Schema ต้นแบบ, RLS, triggers, helper functions |
 | `20261101085756_server_functions.sql` | Server-side functions (RPC) |
 | `20261101120000_coin_checkout.sql` | เติม coin ผ่าน Stripe Checkout (PromptPay) |
+| `20261101130000_cron_jobs.sql` | Cron jobs (pg_cron) |
 
 ## Schema ต้นแบบ (`init_schema`)
 
@@ -63,7 +64,24 @@
 - ห้ามเลื่อน `publish_at` ของตอนที่ปล่อยแล้ว
 - Open content hold ได้ 1 อันต่อเรื่อง
 
+## Cron jobs (`cron_jobs`)
+
+ใช้ pg_cron ใน DB (ไม่ต้องมี server) — แต่ละ job เรียกฟังก์ชันใน `private` (EXECUTE เฉพาะ `service_role`)
+
+| Job | ความถี่ | ฟังก์ชัน | ทำอะไร |
+|---|---|---|---|
+| `release-episodes` | ทุกนาที | `release_due_episodes` | ตอนที่ถึง `publish_at` → แจ้ง follower (`new_episode`) + อัพเดต `series.last_episode_at` |
+| `refresh-suspensions` | ทุกนาที | `refresh_expired_suspensions` | suspend ที่ครบ `ends_at` → `refresh_user_status` |
+| `expire-welcome-coins` | ทุก 10 นาที | `expire_welcome_coins` | ตัด welcome coin หมดอายุ + ลง ledger (เหมือน lazy expiry ใน `lock_wallet`) |
+| `purge-cron-history` | ทุกวัน 03:00 UTC | — | ลบ `cron.job_run_details` เก่ากว่า 7 วัน |
+
+- ทุกฟังก์ชันจำกัด batch + `SKIP LOCKED` — ไม่รอ/ไม่ deadlock กับ request ของผู้ใช้ ส่วนที่ข้ามไปจะทำรอบถัดไป; เคารพ lock order (profiles → series → episodes)
+- `episodes.released_at` = job จัดการตอนนี้แล้ว (ตอนที่ปล่อยก่อน migration ถูก backfill = `publish_at`) — แจ้งครั้งเดียวต่อตอน
+- แจ้ง follower เฉพาะตอนที่อ่านได้จริงตอนนั้น (series `published` + `active`, ไม่ถูกลบ); ถ้าไม่ใช่ → mark ว่าจัดการแล้วโดยไม่แจ้ง (เรื่องที่กลับมาจาก hold/draft จะไม่แจ้งตอนเก่ารวดเดียว); ไม่แจ้ง uploader เอง
+- Ban ไม่มี `ends_at` จึงไม่ถูกปลดโดย cron (ถ้าจะมี ban แบบมีเวลา ต้องปลด Auth ban ฝั่ง server ด้วย)
+- ดูผลการรัน: `select * from cron.job_run_details order by start_time desc`
+
 ## Tests
 
-- pgTAP: `supabase/tests/database/server_functions.test.sql`, `coin_checkout.test.sql` — ผ่าน 78/78, ผ่าน `supabase db advisors`
+- pgTAP: `supabase/tests/database/server_functions.test.sql`, `coin_checkout.test.sql`, `cron_jobs.test.sql` — ผ่าน 102/102, ผ่าน `supabase db advisors`
 - รัน: `npx supabase test db`

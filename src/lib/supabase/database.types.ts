@@ -311,14 +311,14 @@ isOneToOne: false
                   ]
                 },"episodes": {
                   Row: {
-                    "created_at": string,"deleted_at": string | null,"id": number,"number": number,"page_count": number,"price": number,"price_changed_at": string | null,"publish_at": string | null,"season_id": number | null,"series_id": number,"title": string | null,"updated_at": string
+                    "created_at": string,"deleted_at": string | null,"id": number,"number": number,"page_count": number,"price": number,"price_changed_at": string | null,"publish_at": string | null,"released_at": string | null,"season_id": number | null,"series_id": number,"title": string | null,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"deleted_at"?: string | null,"id"?: never,"number": number,"page_count"?: number,"price"?: number,"price_changed_at"?: string | null,"publish_at"?: string | null,"season_id"?: number | null,"series_id": number,"title"?: string | null,"updated_at"?: string
+                    "created_at"?: string,"deleted_at"?: string | null,"id"?: never,"number": number,"page_count"?: number,"price"?: number,"price_changed_at"?: string | null,"publish_at"?: string | null,"released_at"?: string | null,"season_id"?: number | null,"series_id": number,"title"?: string | null,"updated_at"?: string
                   }
                   Update: {
-                    "created_at"?: string,"deleted_at"?: string | null,"id"?: never,"number"?: number,"page_count"?: number,"price"?: number,"price_changed_at"?: string | null,"publish_at"?: string | null,"season_id"?: number | null,"series_id"?: number,"title"?: string | null,"updated_at"?: string
+                    "created_at"?: string,"deleted_at"?: string | null,"id"?: never,"number"?: number,"page_count"?: number,"price"?: number,"price_changed_at"?: string | null,"publish_at"?: string | null,"released_at"?: string | null,"season_id"?: number | null,"series_id"?: number,"title"?: string | null,"updated_at"?: string
                   }
                   Relationships: [
                     {
