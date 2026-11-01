@@ -24,6 +24,18 @@
   - เพิ่ม code ใหม่ใน SQL ต้องเพิ่มที่นี่ด้วย
   - code ที่ไม่รู้จัก → `unexpected_error` + log
 
+## Login / สมัครสมาชิก
+
+- Email + password อย่างเดียว (ยังไม่มี OAuth) — หน้า `/login` (`?mode=signup`, `?next=`), form อยู่ที่ `src/components/auth/auth-form.tsx`
+- Server Actions `src/app/actions/auth.ts`: `signIn`, `signUp`, `signOut`
+  - map Supabase Auth error code → ข้อความไทยในไฟล์นั้นเอง (ไม่ใช่ `errors.ts` ซึ่งเป็นของ RPC); code ที่ไม่รู้จัก → ข้อความกลาง + log ไม่โชว์ข้อความดิบ
+  - สมัคร: รหัสผ่าน ≥ 8 ตัว, ต้องติ๊กยอมรับข้อกำหนด/นโยบาย (`/terms`, `/privacy` — ยังไม่มีหน้า)
+  - ยืนยัน email ปิด (local) → login ทันที; เปิด (production) → แสดง "ส่งลิงก์แล้ว" (Supabase ตอบเหมือนกันแม้ email ซ้ำ กันการเดา email)
+- `?next=` ผ่าน `safeNext()` (`src/lib/safe-next.ts`) เสมอ — รับเฉพาะ path ภายในเว็บ กัน open redirect
+- ลิงก์ยืนยัน email → `/auth/confirm` (`src/app/auth/confirm/route.ts`) รองรับทั้ง `?code=` (PKCE, template ปกติ) และ `?token_hash=&type=` (template custom) → trigger ใน DB ให้ welcome coin
+- `emailRedirectTo` สร้างจาก host ของ request → ต้องอยู่ใน Redirect URLs ของ Supabase (local: `additional_redirect_urls` ใน `supabase/config.toml`; production: ตั้งใน Dashboard → Auth → URL Configuration)
+- เปิด `/login` ตอน login อยู่แล้ว → redirect ไป `next`
+
 ## Ban / lift กับ Supabase Auth
 
 - `banUser`: เรียก RPC ก่อน แล้วค่อย Auth ban (`ban_duration`)

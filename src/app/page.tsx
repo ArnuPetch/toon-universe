@@ -1,6 +1,11 @@
 import { Suspense } from "react";
 import { BottomTabBar } from "@/components/home/bottom-tab-bar";
-import { ContinueCard, RankItem, TrendingCard, UpdatedCard } from "@/components/home/cards";
+import {
+  ContinueCard,
+  RankItem,
+  TrendingCard,
+  UpdatedCard,
+} from "@/components/home/cards";
 import { HeroCarousel } from "@/components/home/hero-carousel";
 import { RankingSection } from "@/components/home/ranking-section";
 import { Rail, Section, SectionSkeleton } from "@/components/home/section";
@@ -24,19 +29,29 @@ export default function HomePage() {
     <>
       <TopBar />
       <main className="mx-auto flex w-full max-w-[1440px] flex-col gap-8 px-4 pb-24 pt-4 lg:gap-12 lg:px-12 lg:pb-[139px] lg:pt-8">
-        <Suspense fallback={<SectionSkeleton className="h-[360px] rounded-[20px] lg:h-[420px]" />}>
+        <Suspense
+          fallback={
+            <SectionSkeleton className="h-[360px] rounded-[20px] lg:h-[420px]" />
+          }
+        >
           <Hero />
         </Suspense>
         <Suspense fallback={null}>
           <ContinueReadingSection />
         </Suspense>
-        <Suspense fallback={<SectionSkeleton className="h-[502px] lg:h-[524px]" />}>
+        <Suspense
+          fallback={<SectionSkeleton className="h-[502px] lg:h-[524px]" />}
+        >
           <Ranking />
         </Suspense>
-        <Suspense fallback={<SectionSkeleton className="h-[627px] lg:h-[286px]" />}>
+        <Suspense
+          fallback={<SectionSkeleton className="h-[627px] lg:h-[286px]" />}
+        >
           <RecentlyUpdated />
         </Suspense>
-        <Suspense fallback={<SectionSkeleton className="h-[277px] lg:h-[438px]" />}>
+        <Suspense
+          fallback={<SectionSkeleton className="h-[277px] lg:h-[438px]" />}
+        >
           <Trending />
         </Suspense>
       </main>
@@ -71,7 +86,11 @@ function RankingList({ items }: { items: RankingEntry[] }) {
     // Desktop: two columns, 1–5 on the left and 6–10 on the right.
     <ol className="grid gap-3 lg:grid-flow-col lg:grid-cols-2 lg:grid-rows-5 lg:gap-x-5">
       {items.map((item, i) => (
-        <RankItem key={item.id} item={item} className={i >= 5 ? "max-lg:hidden" : undefined} />
+        <RankItem
+          key={item.id}
+          item={item}
+          className={i >= 5 ? "max-lg:hidden" : undefined}
+        />
       ))}
     </ol>
   );
@@ -110,10 +129,17 @@ async function Trending() {
   const items = await getTrending();
   if (items.length === 0) return null;
   return (
-    <Section title="กำลังมาแรง" icon={<FireIcon className="size-5 lg:size-[22px]" />} seeAllHref="/ranking?kind=trending">
+    <Section
+      title="กำลังมาแรง"
+      icon={<FireIcon className="size-5 lg:size-[22px]" />}
+      seeAllHref="/ranking?kind=trending"
+    >
       <Rail desktopClass="lg:grid lg:grid-cols-5 lg:gap-5">
         {items.map((item, i) => (
-          <div key={item.id} className={`contents ${i >= 5 ? "lg:hidden" : ""}`}>
+          <div
+            key={item.id}
+            className={`contents ${i >= 5 ? "lg:hidden" : ""}`}
+          >
             <TrendingCard item={item} />
           </div>
         ))}

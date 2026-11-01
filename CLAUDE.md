@@ -20,7 +20,7 @@ Web app สำหรับอ่านและอัพโหลด manga, manh
 - [docs/tech-stack.md](docs/tech-stack.md) — Tech stack ที่ใช้
 - [docs/database.md](docs/database.md) — Migrations, schema/RLS/triggers, server-side functions (RPC), lock order, การตัดสินใจเรื่อง ban/withdrawal/content hold, pgTAP tests
 - [docs/server-integration.md](docs/server-integration.md) — Next.js ↔ Supabase: clients, proxy, auth helpers, RPC wrapper, error mapping, ban sync กับ Auth, cache ข้อมูลสาธารณะ
-- [docs/frontend.md](docs/frontend.md) — หลักการทำหน้าเว็บ: Figma, design tokens, components, data/cache, mutations, a11y, วิธีตรวจงาน
+- [docs/frontend.md](docs/frontend.md) — หลักการทำหน้าเว็บ: ต้นแบบ (หน้า Home), design tokens, components, data/cache, mutations, a11y, วิธีตรวจงาน
 
 ## Tech stack (สรุป)
 
@@ -28,7 +28,7 @@ TypeScript · Next.js · Supabase · Cloudflare R2 · Vercel Hobby (dev) → Clo
 
 ## สถานะปัจจุบัน (อัพเดต 2026-11-01)
 
-**ขั้นตอน: เริ่มทำหน้าเว็บแล้ว — หน้า Home เสร็จ (Desktop + Mobile ตาม Figma, มี cache) → ถัดไปคือหน้าอื่นของ Reader (ดูลำดับด้านล่าง) ทำตาม [docs/frontend.md](docs/frontend.md)**
+**ขั้นตอน: เริ่มทำหน้าเว็บแล้ว — หน้า Home (มี cache, เป็นต้นแบบของทุกหน้า) + Login เสร็จ → ถัดไปคือหน้าเรื่อง/หน้าอ่าน (ดูลำดับด้านล่าง) ทำตาม [docs/frontend.md](docs/frontend.md)**
 
 เสร็จแล้ว (รายละเอียดใน docs):
 
@@ -39,6 +39,7 @@ TypeScript · Next.js · Supabase · Cloudflare R2 · Vercel Hobby (dev) → Clo
 - Stripe Checkout (PromptPay) + webhook → `coin_purchases` / `coin_wallets` / `coin_ledger` — [docs/server-integration.md](docs/server-integration.md#stripe-checkout-promptpay)
 - Cron (pg_cron): แจ้งตอนใหม่ + `last_episode_at`, ปลด suspend ที่ครบเวลา, ตัด welcome coin หมดอายุ — [docs/database.md](docs/database.md#cron-jobs-cron_jobs)
 - นับยอดวิว + Ranking (materialized views) + "คนที่อ่านเรื่องนี้ก็อ่าน" — [docs/database.md](docs/database.md#ranking--recommendation-ranking), `src/lib/server/ranking.ts`
+- หน้า Login / สมัครสมาชิก `/login` (email + password, Server Actions `src/app/actions/auth.ts`, ยืนยัน email ที่ `/auth/confirm`) — [docs/server-integration.md](docs/server-integration.md#login--สมัครสมาชิก)
 - หน้า Home (`src/app/page.tsx`, ข้อมูลจาก `src/lib/server/home.ts`) + cache ข้อมูลสาธารณะ (tag `catalog`, ล้างด้วย `invalidateCatalog()`) — [docs/frontend.md](docs/frontend.md), [docs/server-integration.md](docs/server-integration.md#cache-ข้อมูลสาธารณะ-catalog)
 
 กฎสำคัญ (ห้ามพลาด):
@@ -51,14 +52,14 @@ TypeScript · Next.js · Supabase · Cloudflare R2 · Vercel Hobby (dev) → Clo
 - Push migration ไปที่ branch `dev` → Supabase GitHub integration apply ให้เอง
 - **เปลี่ยนอะไรที่ทำให้เนื้อหาสาธารณะเปลี่ยน (publish, แก้ชื่อ/ปก/เรต, ลบ, hold, แบน) ต้องเรียก `invalidateCatalog()`** ไม่งั้นคนที่ไม่ login เห็นของเก่า/เรื่องที่ถูกถอด
 - หน้าเว็บ: ใช้ token สีใน `globals.css` ห้าม hardcode, ส่วนที่อ่าน session อยู่ใต้ `<Suspense>`, ข้อมูลส่วนตัวไม่ cache
+- **หน้าใหม่ไม่ต้องดู Figma แล้ว** (ไม่ต้องเรียก Figma MCP) — ใช้หน้า Home (`src/app/page.tsx` + `src/components/home/`) เป็นต้นแบบเรื่องหน้าตา, layout, spacing และ component
 
 ยังไม่ได้ทำ (เรียงตามลำดับที่ควรทำ):
 
-1. หน้า Login / สมัครสมาชิก (`/login`) — ต้องมีก่อนหน้าที่ต้อง login ทั้งหมด
-2. หน้าเรื่อง `/series/[slug]` และหน้าอ่านตอน `/series/[slug]/[number]` (ต้องเรียก `recordEpisodeView`, unlock ตอนด้วย coin)
-3. หน้าเติม coin `/coins` → ทดสอบ Stripe PromptPay กับ sandbox จริง — ดู [Stripe sandbox](#stripe-sandbox) ด้านล่าง
-4. หน้าอื่นของ Reader ที่ Home ลิงก์ไว้: `/search`, `/ranking`, `/genres`, `/bookshelf`, `/notifications`, `/profile`, `/updates`
-5. หน้า Uploader / Admin
+1. หน้าเรื่อง `/series/[slug]` และหน้าอ่านตอน `/series/[slug]/[number]` (ต้องเรียก `recordEpisodeView`, unlock ตอนด้วย coin)
+2. หน้าเติม coin `/coins` → ทดสอบ Stripe PromptPay กับ sandbox จริง — ดู [Stripe sandbox](#stripe-sandbox) ด้านล่าง
+3. หน้าอื่นของ Reader ที่ Home ลิงก์ไว้: `/search`, `/ranking`, `/genres`, `/bookshelf`, `/notifications`, `/profile` (ปุ่มออกจากระบบ → `signOut`, กรอกวันเกิด), `/updates`, `/terms`, `/privacy`, ลืมรหัสผ่าน
+4. หน้า Uploader / Admin
 
 Local dev: `npx supabase start` (Studio: http://127.0.0.1:54323), `npx supabase db reset --local` เพื่อ apply migration ใหม่, `npx supabase test db` เพื่อรัน pgTAP tests
 
