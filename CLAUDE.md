@@ -28,7 +28,7 @@ TypeScript · Next.js · Supabase · Cloudflare R2 · Vercel Hobby (dev) → Clo
 
 ## สถานะปัจจุบัน (อัพเดต 2026-11-01)
 
-**ขั้นตอน: กำลังทำหน้าเว็บ — หน้าฝั่ง Reader เสร็จครบแล้ว → ถัดไปคือคอมเมนต์ + รีวิว (ดูลำดับด้านล่าง) ทำตาม [docs/frontend.md](docs/frontend.md)**
+**ขั้นตอน: กำลังทำหน้าเว็บ — หน้าฝั่ง Reader + คอมเมนต์/รีวิวเสร็จแล้ว → ถัดไปคือหน้า Uploader / Admin (ดูลำดับด้านล่าง) ทำตาม [docs/frontend.md](docs/frontend.md)**
 
 เสร็จแล้ว (รายละเอียดใน docs):
 
@@ -44,6 +44,7 @@ TypeScript · Next.js · Supabase · Cloudflare R2 · Vercel Hobby (dev) → Clo
 - หน้าเรื่อง `/series/[slug]` + หน้าอ่าน `/series/[slug]/[number]` (unlock ด้วย coin, นับวิว, บันทึก progress/โหมดอ่าน, ติดตาม/ชั้นหนังสือ, age gate) — ข้อมูลจาก `src/lib/server/series.ts`, actions `src/app/actions/reader.ts` + `bookshelf.ts` — [docs/frontend.md](docs/frontend.md#หน้าเรื่อง--หน้าอ่าน)
 - หน้าอื่นของ Reader: `/search`, `/ranking`, `/genres`, `/genres/[slug]`, `/updates` (RPC `search_series`, ข้อมูลจาก `src/lib/server/browse.ts`), `/bookshelf`, `/notifications`, `/profile` (ข้อมูลจาก `src/lib/server/library.ts`, actions `notifications.ts` + `profile.ts`), ลืมรหัสผ่าน `/forgot-password` → `/reset-password`, `/terms`, `/privacy` (ร่าง รอฝ่ายกฎหมายตรวจ) — [docs/frontend.md](docs/frontend.md#หน้า-browse--ส่วนตัว)
 - หน้าเติม coin `/coins` (แพ็ก + ยอด + ประวัติ, action `src/app/actions/coins.ts`, ข้อมูลจาก `src/lib/server/coins.ts`) — **ทดสอบกับ Stripe sandbox จริงแล้ว** (PromptPay → webhook → เติม coin) — [docs/frontend.md](docs/frontend.md#หน้าเติม-coin-coins)
+- คอมเมนต์ + รีวิว/ให้คะแนน รายเรื่อง/รายตอน (ตอบกลับ 1 ชั้น + แจ้งเตือน, spoiler, แก้/ลบ, รายงาน) — กฎใน DB `20261101180000_comments_reviews.sql`, ข้อมูล `src/lib/server/social.ts`, actions `src/app/actions/social.ts`, UI `src/components/social/` — [docs/database.md](docs/database.md#คอมเมนต์--รีวิว-comments_reviews), [docs/frontend.md](docs/frontend.md#คอมเมนต์--รีวิว)
 
 กฎสำคัญ (ห้ามพลาด):
 
@@ -59,9 +60,8 @@ TypeScript · Next.js · Supabase · Cloudflare R2 · Vercel Hobby (dev) → Clo
 
 ยังไม่ได้ทำ (เรียงตามลำดับที่ควรทำ):
 
-1. คอมเมนต์ + รีวิว/ให้คะแนน (รายเรื่อง/รายตอน) บนหน้าเรื่อง/หน้าอ่าน
-2. หน้า Uploader / Admin
-3. เสิร์ฟรูปจาก R2 (ปก + หน้าของตอนผ่าน signed URL) — ตอนนี้เป็น placeholder (`TODO` ใน `cover.tsx`, `reader.tsx`)
+1. หน้า Uploader / Admin (Admin: จัดการ report + ซ่อนคอมเมนต์/รีวิว `hidden_at`)
+2. เสิร์ฟรูปจาก R2 (ปก + หน้าของตอนผ่าน signed URL) — ตอนนี้เป็น placeholder (`TODO` ใน `cover.tsx`, `reader.tsx`)
 
 ฟีเจอร์ที่จะทำทีหลัง (ยังไม่ต้องทำตอนนี้):
 

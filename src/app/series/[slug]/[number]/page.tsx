@@ -8,6 +8,7 @@ import { Reader } from "@/components/reader/reader";
 import { UnlockPanel } from "@/components/reader/unlock-panel";
 import { SectionSkeleton } from "@/components/section";
 import { AgeGate } from "@/components/series/age-gate";
+import { DiscussionSkeleton, EpisodeDiscussion } from "@/components/social/discussion";
 import { getViewerSummary } from "@/lib/server/home";
 import { recordEpisodeView } from "@/lib/server/ranking";
 import {
@@ -120,7 +121,16 @@ async function EpisodeContent({ slug, rawNumber }: { slug: string; rawNumber: st
   return (
     <>
       <ReaderHeader series={series} episode={episode} />
-      <main className="flex-1 pb-8">{body}</main>
+      <main className="flex-1 pb-8">
+        {body}
+        {viewer.meetsAgeRating && (
+          <div className="mx-auto w-full max-w-[800px] px-4 pt-10 lg:pt-14">
+            <Suspense fallback={<DiscussionSkeleton />}>
+              <EpisodeDiscussion series={series} episode={episode} viewer={viewer} canRead={canRead} />
+            </Suspense>
+          </div>
+        )}
+      </main>
       <EpisodeNav series={series} prev={prev} next={next} />
     </>
   );

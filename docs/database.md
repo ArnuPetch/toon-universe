@@ -16,6 +16,7 @@
 | `20261101150000_series_page.sql` | `get_series_stats` (สถิติทั้งหมดของเรื่องจาก MV), `viewer_meets_age_rating` (ผู้เรียกผ่านเรตไหม) — anon/authenticated เรียกได้, security invoker |
 | `20261101160000_reader_pages.sql` | `search_series` — ค้นหา/กรองเรื่องสาธารณะที่ผู้เรียกเห็นได้ (RLS + เรตอายุ): ข้อความ (ชื่อเรื่อง/ผู้เขียน/ชื่อแนว, `ILIKE` escape wildcard แล้ว), แนว, สถานะ, ฟรี (ไม่มีตอนเสียเงินที่ปล่อยแล้ว) / เสียเงิน, เรียง `relevance`/`popular` (วิวเดือนนี้)/`updated`/`new`/`rating`/`title`; คืนตอนล่าสุด + `total_count`; limit ≤ 60, offset ≤ 10000 — anon/authenticated, security invoker |
 | `20261101170000_birth_date_lock.sql` | trigger `lock_birth_date` บน `user_private_info`: ผู้ใช้ (anon/authenticated) ตั้งวันเกิดได้ครั้งเดียวตอนยังเป็น null — แก้/ลบหลังจากนั้น → `birth_date_locked`; `service_role` (ฝ่าย support/admin) แก้ได้ |
+| `20261101180000_comments_reviews.sql` | กฎเขียนคอมเมนต์/รีวิว (trigger, ข้ามเมื่อเป็น `service_role`), แจ้งเตือน `comment_reply`, ซ่อนคอมเมนต์/รีวิวของคนที่โดนแบน, report ซ้ำไม่ได้, RPC `get_review_summary` — ดู [คอมเมนต์ + รีวิว](#คอมเมนต์--รีวิว-comments_reviews) |
 
 ## Schema ต้นแบบ (`init_schema`)
 
@@ -106,8 +107,20 @@
 - Cron: `refresh-rank-stats` ทุก 10 นาที, `refresh-also-read` ทุกชั่วโมง (นาทีที่ 17) — ใช้ `refresh ... concurrently` ไม่ block ผู้อ่าน; `purge-view-seen` ทุกวัน 03:10 UTC
 - ถ้าข้อมูลโตมาก: `all` ของ `series_rank_stats` scan `episode_view_daily` ทั้งตาราง → ค่อยเพิ่มตารางยอดรวม; หรือย้าย refresh ไปเวลาที่คนน้อย
 
+## คอมเมนต์ + รีวิว (`comments_reviews`)
+
+Client เขียนตาราง `comments` / `reviews` / `reports` ตรงผ่าน RLS (`user_id` = session) — กฎที่เชื่อ client ไม่ได้อยู่ใน trigger:
+
+- **คอมเมนต์** (รายเรื่อง `episode_id is null` / รายตอน): ตอนต้องปล่อยแล้ว + ไม่ถูกลบ (`episode_not_available`), ผ่านเรตอายุ (`age_restricted`, เจ้าของเรื่องข้าม), ตอบกลับได้ชั้นเดียว เฉพาะคอมเมนต์หลักที่ยังแสดงอยู่ของ target เดียวกัน (`comment_parent_invalid`), ≤ 5 คอมเมนต์/นาที (`rate_limited`)
+- ลบคอมเมนต์ = soft delete ทางเดียว (`deleted_at` ถูกแทนด้วย `now()`); ลบแล้วแก้/กู้คืนไม่ได้ (`comment_not_found`); คอมเมนต์หลักที่ถูกลบ/ซ่อน → คำตอบใต้มันไม่แสดง (query ดึงคำตอบตาม parent ที่เห็น)
+- ตอบกลับ → แจ้งเตือน `comment_reply` ให้เจ้าของคอมเมนต์หลัก (ไม่แจ้งตัวเอง; trigger security definer)
+- **รีวิว**: 1 คน/target (unique), รีวิวเรื่องตัวเองไม่ได้ (`cannot_review_own_series`), เรตอายุ, ต้องเคยอ่าน (`review_requires_reading`) — รายเรื่อง: มี `reading_progress` หรือ unlock ในเรื่อง; รายตอน: ตอนฟรี หรือเคย unlock (หมดอายุแล้วก็นับ, refund ไม่นับ); แก้คะแนน/ข้อความได้ (ไม่เช็คซ้ำ), ลบได้
+- อ่าน: นอกจาก hidden/deleted แล้ว ซ่อนของผู้ใช้ที่โดนแบนด้วย (policy เช็ค `profiles` ซึ่ง RLS ซ่อนคนโดนแบน) — **ยกเว้น MV ranking** (`series_rank_stats`) ซึ่งยังนับรีวิวของคนโดนแบน (ถ้าเป็นปัญหาให้ admin ซ่อนรีวิวตอนแบน)
+- `get_review_summary(series_id, episode_id default null)` → ค่าเฉลี่ย, จำนวน, histogram 1–5 ดาว แบบสด (security invoker; ไม่นับ hidden แม้เป็นของตัวเอง) — หน้าเรื่องใช้ค่านี้แทนคะแนนจาก MV
+- report คอมเมนต์/รีวิวซ้ำไม่ได้ (unique ต่อ reporter + target → `already_reported`)
+
 ## Tests
 
-- pgTAP: `supabase/tests/database/server_functions.test.sql`, `coin_checkout.test.sql`, `cron_jobs.test.sql`, `ranking.test.sql`, `series_page.test.sql`, `birth_date_lock.test.sql`, `reader_pages.test.sql` (กรองเฉพาะ fixture id ของตัวเอง จึงรันกับ DB ที่มีข้อมูลทดสอบได้) — ผ่าน `supabase db advisors`
+- pgTAP: `supabase/tests/database/server_functions.test.sql`, `coin_checkout.test.sql`, `cron_jobs.test.sql`, `ranking.test.sql`, `series_page.test.sql`, `birth_date_lock.test.sql`, `reader_pages.test.sql`, `comments_reviews.test.sql` (กรองเฉพาะ fixture id ของตัวเอง จึงรันกับ DB ที่มีข้อมูลทดสอบได้) — ผ่าน `supabase db advisors`
 - test ใช้ fixture id ตายตัว (เช่น user `…a1`) → รันกับ DB ที่ใส่ข้อมูลทดสอบหน้าเว็บไว้แล้วจะชน/ผลเพี้ยน; รันหลัง `npx supabase db reset --local`
 - รัน: `npx supabase test db`

@@ -188,6 +188,17 @@ function describe(
         href: series ? `/series/${series.slug}` : null,
       };
     }
+    case "comment_reply": {
+      const n = episode?.number ?? num(p.episode_number);
+      const who = str(p.replier_name) ?? "มีคน";
+      const snippet = str(p.snippet);
+      const page = series ? (n ? `/series/${series.slug}/${n}` : `/series/${series.slug}`) : null;
+      return {
+        title: `${who} ตอบกลับความคิดเห็นของคุณ`,
+        body: `${seriesTitle}${n ? ` ตอนที่ ${n}` : ""}${snippet ? ` — “${snippet}”` : ""}`,
+        href: page ? `${page}#comments` : null,
+      };
+    }
     default:
       return { title: str(p.title) ?? "ประกาศจาก Toon Universe", body: str(p.message) ?? "", href: null };
   }

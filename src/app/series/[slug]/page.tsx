@@ -17,6 +17,7 @@ import { Rail, Section, SectionSkeleton } from "@/components/section";
 import { EpisodeList, type EpisodeGroup } from "@/components/series/episode-list";
 import { AgeGate } from "@/components/series/age-gate";
 import { SeriesActions } from "@/components/series/series-actions";
+import { DiscussionSkeleton, SeriesDiscussion } from "@/components/social/discussion";
 import { TopBar } from "@/components/top-bar";
 import {
   getPublicSeriesTitle,
@@ -78,6 +79,11 @@ async function SeriesContent({ slug }: { slug: string }) {
       )}
       <SeriesHeader series={series} viewer={viewer} />
       {viewer.meetsAgeRating && <Episodes series={series} viewer={viewer} />}
+      {viewer.meetsAgeRating && (
+        <Suspense fallback={<DiscussionSkeleton />}>
+          <SeriesDiscussion series={series} viewer={viewer} />
+        </Suspense>
+      )}
       <Suspense fallback={<SectionSkeleton className="h-[277px] lg:h-[438px]" />}>
         <Recommendations seriesId={series.id} />
       </Suspense>

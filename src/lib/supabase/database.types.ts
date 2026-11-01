@@ -790,6 +790,11 @@ isOneToOne: false
 "fail_coin_purchase":
 { Args: { "p_purchase_id": number,"p_session_id": string,"p_status": Database["public"]['Enums']["payment_status"] }; Returns: Json
                            },
+"get_review_summary":
+{ Args: { "p_episode_id"?: number,"p_series_id": number }; Returns: {
+              "rating_avg": number,"rating_count": number,"star_counts": (number)[]
+            }[]
+                           },
 "get_series_ranking":
 { Args: { "p_genre_id"?: number,"p_kind": Database["public"]['Enums']["ranking_kind"],"p_limit"?: number,"p_offset"?: number,"p_period"?: Database["public"]['Enums']["ranking_period"] }; Returns: {
               "age_rating": Database["public"]['Enums']["age_rating"],"cover_key": string,"follows": number,"last_episode_at": string,"published_at": string,"rank": number,"rating_avg": number,"rating_count": number,"score": number,"series_id": number,"slug": string,"status": Database["public"]['Enums']["series_status"],"title": string,"views": number

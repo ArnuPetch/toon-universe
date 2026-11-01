@@ -56,6 +56,7 @@
 - `/login`
 - `/series/[slug]`, `/series/[slug]/[number]` (ดูด้านล่าง)
 - `/coins` (ดูด้านล่าง)
+- คอมเมนต์ + รีวิว บนหน้าเรื่อง/หน้าอ่าน (ดูด้านล่าง)
 - หน้าอื่นของ Reader (ดู "หน้า Browse / ส่วนตัว" ด้านล่าง): `/search`, `/ranking`, `/genres`, `/genres/[slug]`, `/updates`, `/bookshelf`, `/notifications`, `/profile`, `/forgot-password`, `/reset-password`, `/terms`, `/privacy`
 
 ## หน้าเรื่อง / หน้าอ่าน
@@ -66,6 +67,16 @@
 - `Reader` (client): โหมดเลื่อนลง/พลิกหน้า + ซ้าย→ขวา/ขวา→ซ้าย (ปุ่มลูกศร, คลิกครึ่งซ้าย/ขวา), จำค่าต่อเรื่อง (`saveReadingPreference`), บันทึก progress แบบ debounce (`saveReadingProgress` — ย้ายเรื่องเข้าชั้น "กำลังอ่าน" ด้วยถ้ายังไม่อยู่หรืออยู่ "อยากอ่าน")
 - รูปหน้า/ปกยังเป็น placeholder ตาม width/height — รอ R2 + signed URL
 - รายชื่อตอน: ล่าสุดก่อน (สลับได้), แสดง 30 ตอนแรกแล้วกด "ดูทั้งหมด", แยกตาม season ถ้ามี
+
+## คอมเมนต์ + รีวิว
+
+- ข้อมูล: `src/lib/server/social.ts` — `loadComments` (คอมเมนต์หลัก 20 อันล่าสุด keyset ด้วย `id` + คำตอบทั้งหมดเรียงเก่า→ใหม่), `countComments`, `getReviewSummary`, `loadReviews` (เฉพาะที่มีข้อความ ไม่รวมของตัวเอง 10 อัน), `getMyReview` — อ่านในนามผู้ใช้ (RLS) **ไม่ cache**
+- Actions: `src/app/actions/social.ts` — `postComment`, `editComment`, `deleteComment`, `loadMoreComments`, `saveReview` (update ก่อน ไม่มีค่อย insert — upsert ไม่ได้เพราะไม่มีสิทธิ์ UPDATE คอลัมน์ key), `deleteReview`, `loadMoreReviews`, `reportContent`; คืน `ActionResult`, error จาก trigger แปลงด้วย `writeError()` (42501 = บัญชีถูกระงับ)
+- UI `src/components/social/`: `discussion.tsx` (server: `SeriesDiscussion` แท็บรีวิว→ความคิดเห็น, `EpisodeDiscussion` แท็บความคิดเห็น→ให้คะแนน แบบ `compact`), `discussion-tabs.tsx` (section `#comments` — ลิงก์แจ้งเตือนตอบกลับมาที่นี่ แล้วสลับไปแท็บความคิดเห็น), `review-panel.tsx`, `comment-panel.tsx`, `bits.tsx` (ดาว, spoiler, composer, report dialog)
+- หน้าเรื่อง: ใต้รายชื่อตอน; หน้าอ่าน: ใต้หน้าของตอน (กว้าง 800) — แสดงเมื่อผ่านเรตอายุ, ใน `<Suspense>`
+- Spoiler: ข้อความถูกบังจนกด "แตะเพื่อดู"; รายงาน = `<dialog>` เลือกเหตุผล spam / คำหยาบ / สปอยล์ไม่ซ่อน
+- บันทึก/ลบรีวิว → `router.refresh()` ให้คะแนนบนหัวเรื่อง + สรุปอัพเดต
+- ยังไม่มี: ไลก์คอมเมนต์, เรียงคอมเมนต์แบบอื่น, admin ซ่อนคอมเมนต์ (รอหน้า Admin — ตั้ง `hidden_at` ด้วย `service_role`)
 
 ## หน้าเติม coin (`/coins`)
 

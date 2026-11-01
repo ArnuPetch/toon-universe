@@ -51,6 +51,16 @@ export const ERROR_MESSAGES = {
   already_banned: "บัญชีนี้ถูกแบนอยู่แล้ว",
   sanction_not_active: "บทลงโทษนี้สิ้นสุดไปแล้ว",
 
+  // Comments / reviews / reports (*_comments_reviews.sql)
+  comment_not_found: "ไม่พบความคิดเห็นนี้ (อาจถูกลบไปแล้ว)",
+  comment_parent_invalid: "ตอบกลับความคิดเห็นนี้ไม่ได้ (อาจถูกลบไปแล้ว)",
+  rate_limited: "ส่งถี่เกินไป กรุณารอสักครู่แล้วลองใหม่",
+  cannot_review_own_series: "ไม่สามารถรีวิวผลงานของตัวเองได้",
+  review_requires_reading: "อ่านก่อนแล้วค่อยให้คะแนนนะ",
+  review_not_found: "ไม่พบรีวิวนี้",
+  invalid_input: "ข้อมูลไม่ถูกต้อง",
+  already_reported: "คุณรายงานรายการนี้ไปแล้ว ทีมงานจะตรวจสอบโดยเร็ว",
+
   // Content hold
   series_not_active: "เรื่องนี้ไม่อยู่ในสถานะที่ปิดตรวจได้",
   series_not_under_review: "เรื่องนี้ไม่ได้อยู่ระหว่างปิดตรวจ",

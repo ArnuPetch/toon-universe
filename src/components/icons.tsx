@@ -209,3 +209,28 @@ export function CloseIcon(props: IconProps) {
     </Svg>
   );
 }
+
+export function CommentIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.6A8 8 0 1 1 21 12" />
+    </Svg>
+  );
+}
+
+export function FlagIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M5 21V4M5 4h11l-2 4 2 4H5" />
+    </Svg>
+  );
+}
+
+export function EyeOffIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.1M6.6 6.6C3.7 8.4 2 12 2 12s3.5 7 10 7c1.9 0 3.5-.6 4.9-1.4" />
+      <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+    </Svg>
+  );
+}

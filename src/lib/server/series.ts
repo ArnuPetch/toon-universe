@@ -8,6 +8,7 @@ import { getUserId } from "./auth";
 import { CATALOG_TAG, UPDATES_LIFE } from "./catalog-cache";
 import type { CoverBadge, SeriesSummary } from "./home";
 import { getSeriesRecommendations } from "./ranking";
+import { getReviewSummary } from "./social";
 
 // Data for the series page (/series/[slug]) and the reader (/series/[slug]/[number]).
 //
@@ -68,9 +69,11 @@ async function loadSeries(db: Db, slug: string): Promise<SeriesDetail | null> {
   if (error) console.error("[series:load]", error);
   if (!s || s.deleted_at) return null;
 
-  const [uploader, stats, episodes, seasons] = await Promise.all([
+  const [uploader, stats, rating, episodes, seasons] = await Promise.all([
     db.from("profiles").select("id, display_name, username, is_verified").eq("id", s.uploader_id).maybeSingle(),
     db.rpc("get_series_stats", { p_series_id: s.id }).maybeSingle(),
+    // Live (the stats MV lags ≤ 10 min) so a new review shows up right away.
+    getReviewSummary({ seriesId: s.id, episodeId: null }, db),
     db
       .from("episodes")
       .select("id, number, title, price, publish_at, season_id, page_count")
@@ -101,8 +104,8 @@ async function loadSeries(db: Db, slug: string): Promise<SeriesDetail | null> {
     stats: {
       views: Number(st?.views ?? 0),
       follows: Number(st?.follows ?? 0),
-      ratingAvg: st?.rating_avg ?? null,
-      ratingCount: st?.rating_count ?? 0,
+      ratingAvg: rating.avg,
+      ratingCount: rating.count,
     },
     episodes: (episodes.data ?? []).map((e) => ({
       id: e.id,
